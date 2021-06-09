@@ -27,6 +27,5 @@ namespace MMO_EFCore
         //클래스이름에 Id를 붙이면 해당 변수가 PrimaryKey로 설정된다.
         public int CPlayerId { get; set; }
         public string Name { get; set; }
-
     }
 }
