@@ -86,50 +86,64 @@ namespace MMO_EFCore
             }
         }
 
-        //특정 플레이어가 소지한 아이템들의 CreateDate를 수정
-        public static void UpdateDate()
+        public static void ShowItems()
         {
-            Console.WriteLine("Input Player Name");
-            Console.WriteLine("> ");
+            Console.WriteLine("플레이어 이름 입력");
+            Console.Write(" > ");
             string Name = Console.ReadLine();
 
             using (AppDbContext DB = new AppDbContext())
             {
-                // 입력한 이름과 같은 사람의 아이템들을 가져오고
-                var Items = DB._Items.Include(P => P.Owner).Where(P => P.Owner.Name == Name);                                
-
-                // 아이템 목록 시간을 갱신해주고
-                foreach(CItem Item in Items)
+                foreach (CPlayer Player in DB._Players.AsNoTracking().Where(p => p.Name == Name).Include(P => P.Item))
                 {
-                    Item.CreateDate = DateTime.Now;
+                    Console.WriteLine($"{Player.Item.TemplateId}");
                 }
-
-                //반영한다.
-                DB.SaveChanges();
             }
-
-            //데이터 출력해봄
-            ReadAll();
         }
+        ////특정 플레이어가 소지한 아이템들의 CreateDate를 수정
+        //public static void UpdateDate()
+        //{
+        //    Console.WriteLine("Input Player Name");
+        //    Console.WriteLine("> ");
+        //    string Name = Console.ReadLine();
 
-        public static void DeleteItem()
-        {
-            Console.WriteLine("Input Player Name");
-            Console.Write("> ");
-            string Name = Console.ReadLine();
+        //    using (AppDbContext DB = new AppDbContext())
+        //    {
+        //        // 입력한 이름과 같은 사람의 아이템들을 가져오고
+        //        var Items = DB._Items.Include(P => P.Owner).Where(P => P.Owner.Name == Name);                                
 
-            using (AppDbContext DB = new AppDbContext())
-            {
-                // 입력한 이름과 같은 사람의 아이템들을 가져오고
-                var Items = DB._Items.Include(P => P.Owner).Where(P => P.Owner.Name == Name);
-                //삭제할 아이템 목록 담고
-                DB._Items.RemoveRange(Items);
-                //반영한다.
-                DB.SaveChanges();
-            }
+        //        // 아이템 목록 시간을 갱신해주고
+        //        foreach(CItem Item in Items)
+        //        {
+        //            Item.CreateDate = DateTime.Now;
+        //        }
 
-            //데이터 출력해봄
-            ReadAll();
-        }
+        //        //반영한다.
+        //        DB.SaveChanges();
+        //    }
+
+        //    //데이터 출력해봄
+        //    ReadAll();
+        //}
+
+        //public static void DeleteItem()
+        //{
+        //    Console.WriteLine("Input Player Name");
+        //    Console.Write("> ");
+        //    string Name = Console.ReadLine();
+
+        //    using (AppDbContext DB = new AppDbContext())
+        //    {
+        //        // 입력한 이름과 같은 사람의 아이템들을 가져오고
+        //        var Items = DB._Items.Include(P => P.Owner).Where(P => P.Owner.Name == Name);
+        //        //삭제할 아이템 목록 담고
+        //        DB._Items.RemoveRange(Items);
+        //        //반영한다.
+        //        DB.SaveChanges();
+        //    }
+
+        //    //데이터 출력해봄
+        //    ReadAll();
+        //}
     }
 }
