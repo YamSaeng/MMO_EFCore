@@ -35,11 +35,32 @@ namespace MMO_EFCore
             }
         }
 
+        // 이번 주제 : State (상태)
+        // DBContext를 상속받아 관리되는 변수들은 각각 특정 상태값을 가진다.
+        // 상태값은 총 5가지가 있는데, 다음과 같다
+        // 1) Detached (No Tracking | 추적되지 않는 상태, SaveChanges를 해도 추적하지 않고 있어서 DB에 반영이 안되어 있음) 
+        // 2) Unchanged (DB에 있고, 메모리에 들고 있는 해당 변수가 변동사항이 없어서 수정할 필요가 없는 상태, SaveChanges를 해도 값이 그대로니까 아무것도 하지 않음)
+        // 3) Deleted (DB에는 아직 있지만, 삭제되어야하는 상태, SaveChanges로 DB에 적용)
+        // 4) Modified (DB에 있고, 클라에서 수정(메모리상에서)된 상태, SaveChanges로 DB에 적용)
+        // 5) Added (DB에는 아직 없고, 클라에서 생성(메모리상), SaveChanges로 DB에 적용)
+        // 1 -> 기본상태
+
+        // SaveChanges 호출하면 실행되면 발생하는 일
+        // 1) 추가된 객체들의 상태가 Unchanged로 바뀐다
+        // 2) 데이터를 DB에 추가후 ID를 받아와서 해당 객체의 .ID Property를 채워준다.
+        // 3) Relationship 참고해서, FK 세팅 및 객체 참조 연결
+
+        // 이미 존재하는 사용자를 연동하려면?
+        // 1) Tracked Instance (추적되고 있는 객체)를 얻어온다.
+        // 2) 데이터를 연결한다.
         public static void CreateTestData(AppDbContext DB)
         {
             Player SungWon = new Player() { Name = "SungWon" };
             Player WonJi = new Player() { Name = "WonJi" };
             Player YamSaeng = new Player() { Name = "YamSaeng" };
+
+            // 1) SungWon Detached 상태 ( 메모리 상에는 있지만 아직 아무런 연동 작업도 하지 않았기 때문에 Detached 상태 )
+            Console.WriteLine(DB.Entry(SungWon).State);
 
             Player Player = new Player()
             {
@@ -76,7 +97,15 @@ namespace MMO_EFCore
 
             DB._Items.AddRange(Items);
             DB._Guilds.Add(Guild);
+
+            // 2) SungWon Added 상태 ( 메모리 상에 있는 데이터가 위 문장에 있는 명령어로 인해 Add 상태로 바뀌게됨 )
+            // 플레이어는 Item에 간접적(외부키)로 선언되어 있지만 EF가 알아서 DB에 넣어주는 작업을 해준다.
+            Console.WriteLine(DB.Entry(SungWon).State);
+
             DB.SaveChanges(); //DB에 저장한다.            
+
+            // 3) SungWon Unchanged 상태 ( DB에도 반영 완료 되서 평온한 상태 )
+            Console.WriteLine(DB.Entry(SungWon).State);
         }
                 
         public static void EagarLoading()
