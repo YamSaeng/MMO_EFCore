@@ -334,6 +334,164 @@ namespace MMO_EFCore
             }
         }
 
+        #region 외부키와 nullable
+        // Relationship 복습
+        // - Principal Entity (주요 -> Player)
+        // - Dependent Entity (의존적 -> FK 포함하는 쪽 -> Item)
+
+        // Dependent 데이터가 Principal 데이터 없이 존재할 수 있을까?
+        // 내가 정한 정책에 따라 위에 질문에 대한 답이 달라진다.
+        // 1) 주인이 없는 아이템은 불가능하다
+        // 2) 주인이 없는 아이템은 가능하다.
+
+        // 2번과 같은 정책일때 어떻게 구분해서 설정할까?
+        // Nullable로 구분해준다.
+        // 즉, 1번정책이라면 외부키를 값으로 설정하고,
+        //     2번정책이라면 외부키를 Nullable로 설정하면 됨
+
+        public static void ShowItemsT()
+        {
+            using (AppDbContext DB = new AppDbContext())
+            {
+                foreach(var item in DB._Items.Include(i=>i.Owner).ToList())
+                {
+                    if(item.Owner == null)
+                    {
+                        Console.WriteLine($"ItemId({item.ItemId}) TemplateId({item.TemplateId})Owner (0)");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"ItemId({item.ItemId}) TemplateId({item.TemplateId}) OwnerId({item.Owner.PlayerId}) Owner({item.Owner.Name})");
+                    }
+                }
+            }
+        }
+
+        //Nullable을 표시하려면 변수 옆에 ?를 붙이면 된다.
+        // 1) FK가 Nullable이 아니라면
+        // - Player가 지워지면, FK로 해당 Player를 참조하는 Item도 같이 삭제된다.
+        // 2) FK가 Nullable이라면
+        // - Player가 지워지더라도, FK로 해당 Player를 참조하는 Item은 그대로 있는다.
+
+        public static void TestNullable()
+        {
+            ShowItemsT();
+
+            Console.WriteLine("Input Delete PlayerId");
+            Console.Write(" > ");
+            int Id = int.Parse(Console.ReadLine());
+
+            using (AppDbContext DB = new AppDbContext())
+            {
+                Player player = DB._Players
+                    .Include(p => p.Item) //외부키를 nullable가 가능하게 하고 이부분에서 Item을 include해서 로딩하는 부분을 제거하면 아래에서 player를 제거할때 에러가 난다. 
+                                          //include를 이용해 로딩, 즉 추적하지 않으면 외부키를null로 밀수 없기 때문 왠만해선 외부키 로딩은 무조건 해줘야함
+                    .Single(p => p.PlayerId == Id);
+
+                DB._Players.Remove(player);
+                DB.SaveChanges();
+            }
+
+            Console.WriteLine("-------------Test Complete--------------");
+            ShowItemsT();
+        }
+        #endregion
+
+        // Update Relationship 1 : 1 
+        // 아이템의 Owner를 바꾸고 싶거나 Player의 Item을 바꾸고 싶을 때
+        // 외부키 수정에 관한 방법 1 : 1 경우
+        public static void Update_1v1()
+        {
+            ShowItemsT();
+
+            Console.WriteLine("Input ItemSwitch PlayerId");
+            Console.Write(" > ");
+            int Id = int.Parse(Console.ReadLine());
+
+            using (AppDbContext DB = new AppDbContext())
+            {
+                Player player = DB._Players
+                    .Include(p => p.Item)
+                    .Single(p => p.PlayerId == Id);
+
+                //메모리에 들고 있는것처럼 
+                if(player.Item != null)
+                {
+                    //외부키에 접근해서 데이터 수정
+                    player.Item.TemplateId = 777;
+                    player.Item.CreateDate = DateTime.Now;
+                }
+
+                //이처럼 아이템 새로 생성해서 player에 넣어주면
+                //기존에 있던 아이템 Owner에서 player가 빠지고
+                //새로운 아이템에 player가 Owner로 할당된다.
+                player.Item = new Item()
+                {
+                    TemplateId = 777,
+                    CreateDate = DateTime.Now
+                };
+
+                DB.SaveChanges();
+            }
+
+            ShowItemsT();
+        }
+
+        public static void ShowGuild()
+        {
+            using (AppDbContext DB = new AppDbContext())
+            {
+                foreach (var guild in DB._Guilds.Include(g => g.Members).ToList())
+                {
+                    Console.WriteLine($"GuildId ({guild.GuildId}) GuildName ({guild.GuildName}) MemberCount ({guild.Members.Count})");
+                }
+            }
+        }
+
+        // Update Relationship 1 : N
+        public static void Update_1VN()
+        {
+            ShowGuild();
+
+            Console.WriteLine("Input GuildId");
+            Console.Write(" > ");
+            int Id = int.Parse(Console.ReadLine());
+
+            using (AppDbContext DB = new AppDbContext())
+            {
+                Guild guild = DB._Guilds
+                    .Include(g => g.Members)
+                    .Single(g => g.GuildId == Id);
+
+                // Include를 주석 처리하고 Add를 이용하여 추가할 경우
+                // Members가 null이므로 에러가난다.
+                // Include를 포함 시키고 Add 시키면 말 그대로 추가된다.
+                //guild.Members.Add(new Player()
+                //{
+                //    Name = "BiDDak"
+                //});
+
+                //Add방법 말고 직접 메모리에서 생성한후 넣는 방식을 사용할떄
+                guild.Members = new List<Player>()
+                {
+                    new Player() {Name = "BiDDak"}
+                };
+
+                // Include를 주석 처리하고 플레이어를 추가할 경우
+                // EF에서 Guild에 있는 다른 멤버들의 정보를 모르기 때문에
+                // Guild의 Member에 플레이어를 말 그대로 추가해준다.
+
+                // 반면, Include를 주석처리하지 않고 플레이어를 추가할 경우
+                // EF에서 Member들의 정보를 알고 있는 상태로 
+                // Guild의 Members에 새로 생성한 플레이어를 넣는것이므로 기존에 있던 멤버들과 연결을 끊고
+                // 새로 만들어준 플레이어를 넣는다.
+
+                DB.SaveChanges();
+            }
+
+            Console.WriteLine("----- Test Complete -------");
+            ShowGuild();
+        }
         ////특정 플레이어가 소지한 아이템들의 CreateDate를 수정
         //public static void UpdateDate()
         //{
