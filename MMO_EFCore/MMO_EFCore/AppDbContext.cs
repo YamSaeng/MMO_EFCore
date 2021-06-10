@@ -28,5 +28,34 @@ namespace MMO_EFCore
         {
             Options.UseSqlServer(ConnectionString);
         }
+
+        protected override void OnModelCreating(ModelBuilder Builder)
+        {
+            // 앞으로 Item Entity에 접근할 때 항상 사용되는 모델 레벨(데이터모델에 기록해둔 테이블을 의미)의 필터링을 하고 싶을 경우
+            // Item 테이블에서 데이터를 가지고 올때 SoftDeleted가 false인 대상만 가져올 수 있도록 조건을 걸어줌            
+            Builder.Entity<Item>().HasQueryFilter(i => i.SoftDeleted == false);
+            // 필터를 무시하고 싶으면 IgnoreQueryFilter 옵션 추가
+
+            // item 테이블 순회할때 필터 무시해주고 아래에서 검사해주는 방식의 예
+            //foreach (var item in DB._Items.Include(i => i.Owner).IgnoreQueryFilters().ToList())
+            //{
+            //    if(Item.SoftDeleted)
+            //    {
+            //        Console.WriteLine($"DELETE - ItemId({item.ItemId}) TemplateId({item.TemplateId})");
+            //    }
+            //    else
+            //    {
+            //        if (item.Owner == null)
+            //        {
+            //            Console.WriteLine($"ItemId({item.ItemId}) TemplateId({item.TemplateId})Owner (0)");
+            //        }
+            //        else
+            //        {
+            //            Console.WriteLine($"ItemId({item.ItemId}) TemplateId({item.TemplateId}) OwnerId({item.Owner.PlayerId}) Owner({item.Owner.Name})");
+            //        }
+            //    }                
+            //}
+            // 이런식으로 추가해주면 됨
+        }
     }
 }

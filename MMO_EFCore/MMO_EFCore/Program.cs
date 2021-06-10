@@ -10,7 +10,7 @@ namespace MMO_EFCore
 
             Console.WriteLine("명령어 입력 : ");
             Console.WriteLine("[0] Force Reset");
-            Console.WriteLine("[1] Update_1VN");
+            Console.WriteLine("[1] Test Delete");
 
             while (true)
             {
@@ -22,7 +22,8 @@ namespace MMO_EFCore
                         DBCommands.InitializeDB(ForceReset: true);
                         break;
                     case "1":
-                        DBCommands.Update_1VN();
+                        DBCommands.TestDelete();
+                        //DBCommands.Update_1VN();
                         //DBCommands.TestNullable();
                         //DBCommands.UpdateByReload();
                         break;

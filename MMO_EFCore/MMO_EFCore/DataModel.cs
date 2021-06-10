@@ -17,6 +17,8 @@ namespace MMO_EFCore
     [Table("Item")]
     public class Item
     {
+        //해당 아이템이 삭제 대기 중인지 아닌지 
+        public bool SoftDeleted { get; set; }
         //PrimaryKey
         public int ItemId { get; set; }
         //해당 아이템의 종류를 구분할 ID
@@ -74,7 +76,7 @@ namespace MMO_EFCore
     // 앞서 설명한 로딩 관련한 세번째 구조인 특정 길드에 있는 길드원 수를 추출하는 SelectLoading를 예로 들면
     public class GuildDTO
     {
-        public int GuildId { get; set; }
+        public int? GuildId { get; set; }
         public string Name { get; set; }
         public int MemberCount { get; set; }
     }

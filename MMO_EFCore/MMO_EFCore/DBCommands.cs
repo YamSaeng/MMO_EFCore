@@ -397,6 +397,7 @@ namespace MMO_EFCore
         }
         #endregion
 
+        #region RelationShip Update
         // Update Relationship 1 : 1 
         // 아이템의 Owner를 바꾸고 싶거나 Player의 Item을 바꾸고 싶을 때
         // 외부키 수정에 관한 방법 1 : 1 경우
@@ -492,6 +493,33 @@ namespace MMO_EFCore
             Console.WriteLine("----- Test Complete -------");
             ShowGuild();
         }
+        #endregion
+
+        #region Delete
+        // 1) Tracking Entity를 얻어오고
+        // 2) Remove 호출
+        // 3) SaveChanges 호출
+        public static void TestDelete()
+        {
+            ShowItemsT();
+
+            Console.WriteLine("Seelct Delete ItemId");
+            Console.Write(" > ");
+            int Id = int.Parse(Console.ReadLine());
+
+            using (AppDbContext DB = new AppDbContext())
+            {
+                Item item = DB._Items.Find(Id);
+                //DB._Items.Remove(item); //보통 이렇게 삭제하지 않고 따로 변수를 둬서 삭제 대기 중이라는 것을 기록해둔다.
+                item.SoftDeleted = true; 
+                DB.SaveChanges();
+            }
+
+            Console.WriteLine("---- TestDelete Complete ----");
+            ShowItemsT();
+        }
+        #endregion
+
         ////특정 플레이어가 소지한 아이템들의 CreateDate를 수정
         //public static void UpdateDate()
         //{
