@@ -37,41 +37,71 @@ namespace MMO_EFCore
 
         public static void CreateTestData(AppDbContext DB)
         {
-            CPlayer Player = new CPlayer()
+            Player SungWon = new Player() { Name = "SungWon" };
+            Player WonJi = new Player() { Name = "WonJi" };
+            Player YamSaeng = new Player() { Name = "YamSaeng" };
+
+            Player Player = new Player()
             {
                 Name = "SungWon"
             };
 
-            List<CItem> Items = new List<CItem>()
+            List<Item> Items = new List<Item>()
             {
-                new CItem()
+                new Item()
                 {
                     TemplateId = 101,
                     CreateDate = DateTime.Now,
-                    Owner = Player
+                    Owner = SungWon
                 },
-                new CItem()
+                new Item()
                 {
                     TemplateId = 102,
                     CreateDate = DateTime.Now,
-                    Owner = Player
+                    Owner = WonJi
                 },
-                new CItem()
+                new Item()
                 {
                     TemplateId = 103,
                     CreateDate = DateTime.Now,
-                    Owner = new CPlayer() { Name = "YamSaeng"}
+                    Owner = YamSaeng
                 }
             };
 
-            DB._Items.AddRange(Items);
-            DB.SaveChanges(); //DB에 저장
-        }
+            Guild Guild = new Guild()
+            {
+                GuildName = "A1",
+                Members = new List<Player> { SungWon, WonJi, YamSaeng }
+            };
 
-        public static void ReadAll()
+            DB._Items.AddRange(Items);
+            DB._Guilds.Add(Guild);
+            DB.SaveChanges(); //DB에 저장한다.            
+        }
+                
+        public static void EagarLoading()
         {
+            // 길드 테이블 추가 후 테스트
+            // 특정 길드에 있는 길드원들이 소지한 모든 아이템들을 보고 싶을 때
+
+            Console.WriteLine("길드 이름 입력");
+            Console.Write(" > ");
+            string Name = Console.ReadLine();
+
             using (AppDbContext DB = new AppDbContext())
             {
+                // 장점 : DB 접근 한 번으로 다 로딩(JOIN)
+                // 단점 : 다 필요한지 모르겟는데 로딩시켜주는 부분 ex) 모든 멤버들의 아이템을 다 로딩하는 부분을 의미                
+                Guild Guild = DB._Guilds.AsNoTracking()
+                    .Where(g => g.GuildName == Name)
+                    .Include(g => g.Members) // sql의 select from where에 해당
+                    .ThenInclude(p => p.Item) // Include에 대해서 추가적으로 로딩시켜 주고 싶을 대상이 필요할때 사용
+                    .First(); // sql로 따지면 top 1과 동치
+
+                foreach(Player player in Guild.Members)
+                {
+                    Console.WriteLine($"TemplateId({player.Item.ItemId}) Owner ({player.Name})");
+                }
                 // AsNoTracking 데이터를 읽기전용으로 읽어들인다.
                 // Entity Framework 에서 DB._Items에 변화가 있는지 감시(= 데이터 변경 탐지)하는 Tracking Snapshot이라는 작업을 수행하는데
                 // AsNoTracking를 붙여주면 아래 작업을 할때에는 감시할 필요 없다고 알려주는 기능
@@ -79,10 +109,69 @@ namespace MMO_EFCore
                 // 접근 할 시 에러가 난다. 
                 // 따라서 아래처럼 forecah문에서 접근하고 싶으면 Include를 이용해서 
                 // Include : Eager Loading (즉시 로딩)                 
-                foreach (CItem Item in DB._Items.AsNoTracking().Include(A => A.Owner))
+                foreach (Item Item in DB._Items.AsNoTracking().Include(A => A.Owner))
                 {
                     Console.WriteLine($"TemplateId ({Item.TemplateId}) Owner({Item.Owner.Name}) CreateTime({Item.CreateDate})");
                 }
+            }
+        }
+
+        public static void ExplicitLoading()
+        {
+            // 길드 테이블 추가 후 테스트
+            // 특정 길드에 있는 길드원들이 소지한 모든 아이템들을 보고 싶을 때
+
+            Console.WriteLine("길드 이름 입력");
+            Console.Write(" > ");
+            string Name = Console.ReadLine();
+
+            using (AppDbContext DB = new AppDbContext())
+            {
+                // 장점 : 필요한 시점에 필요한 데이터만 로딩할 수 있음
+                // 단점 : DB 접근 비용
+                // 이렇게만 하면 Members가 null 멤버가 가지고 있는 item들도 null로 들어오게된다.
+                Guild guild = DB._Guilds
+                    .Where(g => g.GuildName == Name)
+                    .First();
+
+                // 명시적으로 로딩
+                // Guild에 있는 Members를 로딩 시켜주라는 말
+                DB.Entry(guild).Collection(g => g.Members).Load();
+                
+                foreach(Player player in guild.Members)
+                {
+                    //player에 있는 item를 로딩 시켜주라는 말
+                    DB.Entry(player).Reference(p => p.Item).Load();
+                }
+
+                foreach (Player player in guild.Members)
+                {
+                    Console.WriteLine($"TemplateId({player.Item.ItemId}) Owner ({player.Name})");
+                }
+            }
+        }
+
+        // 특정 길드에 있는 길드원 수를 추출
+        // 장점 : 필요한 정보만 빼서 로딩
+        // 단점 : 일일히 Select 안에 만들어줘야 하는 부분
+        public static void SelectLoading()
+        {
+            Console.WriteLine("길드 이름 입력");
+            Console.Write(" > ");
+            string Name = Console.ReadLine();
+
+            using (AppDbContext DB = new AppDbContext())
+            {
+                //SELECT COUNT(*) 처럼 특정 값을 설정해서 추출해줄수 있는 기능
+                var Info = DB._Guilds.Where(g => g.GuildName == Name)
+                    .Select(g=> new
+                    {
+                        Name = g.GuildName,
+                        MemberCount = g.Members.Count
+                    })
+                    .First();
+
+                Console.WriteLine($"GuildName : ({Info.Name}), MemberCount({Info.MemberCount})");
             }
         }
 
@@ -94,7 +183,7 @@ namespace MMO_EFCore
 
             using (AppDbContext DB = new AppDbContext())
             {
-                foreach (CPlayer Player in DB._Players.AsNoTracking().Where(p => p.Name == Name).Include(P => P.Item))
+                foreach (Player Player in DB._Players.AsNoTracking().Where(p => p.Name == Name).Include(P => P.Item))
                 {
                     Console.WriteLine($"{Player.Item.TemplateId}");
                 }

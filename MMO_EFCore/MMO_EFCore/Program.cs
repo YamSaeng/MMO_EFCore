@@ -10,8 +10,10 @@ namespace MMO_EFCore
 
             Console.WriteLine("명령어 입력 : ");
             Console.WriteLine("[0] Force Reset");
-            Console.WriteLine("[1] ReadAll");
-            Console.WriteLine("[2] ShowItems");
+            Console.WriteLine("[1] ShowItems");
+            Console.WriteLine("[2] Eagar Loading");
+            Console.WriteLine("[3] Explicit Loading");
+            Console.WriteLine("[4] Select Loading");
 
             while (true)
             {
@@ -23,14 +25,18 @@ namespace MMO_EFCore
                         DBCommands.InitializeDB(ForceReset: true);
                         break;
                     case "1":
-                        DBCommands.ReadAll();
+                        DBCommands.ShowItems();
                         break;
                     case "2":
-                        DBCommands.ShowItems();
+                        DBCommands.EagarLoading();
                         //DBCommands.UpdateDate();
                         break;
                     case "3":
+                        DBCommands.ExplicitLoading();
                         //DBCommands.DeleteItem();
+                        break;
+                    case "4":
+                        DBCommands.SelectLoading();
                         break;
                 }
             }

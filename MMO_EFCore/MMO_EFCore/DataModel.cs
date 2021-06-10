@@ -15,10 +15,10 @@ namespace MMO_EFCore
     //변수명으로 저장하고 싶지 않을때 [Table("저장하고 싶은 테이블 이름")] 이런식으로 지정하면 해당 테이블 명으로 DB에 저장된다.
     //이와 같이 테이블에 해당하는 
     [Table("Item")]
-    public class CItem
+    public class Item
     {
         //PrimaryKey
-        public int CItemId { get; set; }
+        public int ItemId { get; set; }
         //해당 아이템의 종류를 구분할 ID
         public int TemplateId { get; set; }
         public DateTime CreateDate { get; set; }
@@ -29,7 +29,7 @@ namespace MMO_EFCore
         //그래서 보통은 그냥 외부키로 설정해놓은것도 변수에 저장해서 관리한다.
         //외부키를 굳이 설정하지 않더라도 다른 테이블의 이름을 변수로 적어두면 EF가 알아서 외부키로 잡아준다.
         public int OwnerId { get; set; }
-        public CPlayer Owner { get; set; }
+        public Player Owner { get; set; }
     }
 
     //1 : 다 구조
@@ -50,12 +50,22 @@ namespace MMO_EFCore
     //[ForeignKey("외부키 구분자 이름")]를 이용해 선언해준다.
     //또한 1 : 1 구조에서 똑같은 외부키 값을 넣게 되면 전에 입력한 외부키 값이 null로 밀려 있게된다.
     [Table("Player")]
-    public class CPlayer
+    public class Player
     {
         //클래스이름에 Id를 붙이면 해당 변수가 PrimaryKey로 설정된다.
-        public int CPlayerId { get; set; }
+        public int PlayerId { get; set; }
         public string Name { get; set; }
 
-        public CItem Item { get; set; }
+        public Item Item { get; set; }
+        public Guild Guild { get; set; }
+    }
+
+    //플레이어와 1 : 다 구조
+    [Table("Guild")]
+    public class Guild
+    {
+        public int GuildId { get; set; }
+        public string GuildName { get; set; }
+        public ICollection<Player> Members { get; set; }
     }
 }

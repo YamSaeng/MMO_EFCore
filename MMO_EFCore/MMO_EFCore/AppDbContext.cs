@@ -17,8 +17,9 @@ namespace MMO_EFCore
         // CItem을 DB에 등록시켜준다.
         // DbSet<Item> -> EF Core한테 알려준다.
         // _Items이라는 DB 테이블이 있는데, 세부적인 칼럼/키 정보를 Item클래스에서 참고하라고 알려준다는 의미
-        public DbSet<CItem> _Items { get; set; }
-        public DbSet<CPlayer> _Players { get; set; }
+        public DbSet<Item> _Items { get; set; }
+        public DbSet<Player> _Players { get; set; }
+        public DbSet<Guild> _Guilds { get; set; }
 
         // DB를 연결할때 필요하면 문자열로 각종 설정을 붙인다.
         public const string ConnectionString = @"Data Source=(localdb)\ProjectsV13;Initial Catalog=EFCoreDb;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False";
