@@ -164,7 +164,7 @@ namespace MMO_EFCore
             {
                 //SELECT COUNT(*) 처럼 특정 값을 설정해서 추출해줄수 있는 기능
                 var Info = DB._Guilds.Where(g => g.GuildName == Name)
-                    .Select(g=> new
+                    .Select(g=> new GuildDTO() //new 를 이용해 익명의 값이 아닌 GuildDTO를 이용해 명시적으로 값을 알게 함    
                     {
                         Name = g.GuildName,
                         MemberCount = g.Members.Count

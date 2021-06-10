@@ -68,4 +68,13 @@ namespace MMO_EFCore
         public string GuildName { get; set; }
         public ICollection<Player> Members { get; set; }
     }
+
+    // DTO ( Data Transfer Object )
+    // DB에 접근한 대상을 컨텐츠 단에 바로 넘기지 않고 재가공해서 넘겨줄때 사용하는 오브젝트
+    // 앞서 설명한 로딩 관련한 세번째 구조인 특정 길드에 있는 길드원 수를 추출하는 SelectLoading를 예로 들면
+    public class GuildDTO
+    {
+        public string Name { get; set; }
+        public int MemberCount { get; set; }
+    }
 }
