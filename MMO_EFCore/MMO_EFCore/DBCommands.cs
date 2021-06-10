@@ -107,7 +107,49 @@ namespace MMO_EFCore
             // 3) SungWon Unchanged 상태 ( DB에도 반영 완료 되서 평온한 상태 )
             Console.WriteLine(DB.Entry(SungWon).State);
         }
-                
+
+        #region Update
+        // Update 3단계
+        // 1) Tracked Entity를 얻어 온다.
+        // 2) Entity 클래스의 Property를 변경한다. ( Set )
+        // 3) SaveChanges를 호출한다.
+
+        // Update를 할 때 전체 수정을 하는 것인지, 수정사항이 있는 애들만 골라서 하는것인지
+        // 1) SaveChanges를 호출 하면 내부적으로 DetectChanges라는 함수를 호출한다.
+        // 2) DetectChanges함수에서는 최초 Snapshot / 현재 Snapshot 비교
+        // -> 수정사항이 있는 애들만 골라서 처리해줌
+
+        /*
+            SELECT TOP(2) GuildId, GuildName
+            FROM [Guilds]
+            WHERE GuildName = N'T1';
+
+            SET NOCOUNT ON;
+            UPDATE [Guilds]
+            SET GuildName = @p0 
+            WHERE GuildId = @p1;             //p0 p1은 변수 이름
+            
+        */ 
+        public static void UpdateTest()
+        {
+            using (AppDbContext DB = new AppDbContext())
+            {
+                //where과 비슷한 느낌의 Single 구문 
+                //Single은 조건에 맞는 하나의 값을 반환한다. 2개 이상일 경우 Exception을 뱉는다.
+                //최초 ----------------------------------------------------
+                Guild guild = DB._Guilds.Single(g => g.GuildName == "A1"); // 1) 에 해당
+
+                guild.GuildName = "B1"; // 2) 에 해당
+                //현재 ----------------------------------------------------
+
+                DB.SaveChanges(); // 3) 에 해당
+            }
+        }
+        #endregion
+
+        #region DataLoading 종류
+        //관련 데이터 로딩할때 특히 외부키
+        #region EagarLoading
         public static void EagarLoading()
         {
             // 길드 테이블 추가 후 테스트
@@ -144,7 +186,9 @@ namespace MMO_EFCore
                 }
             }
         }
+        #endregion
 
+        #region ExplicitLoading
         public static void ExplicitLoading()
         {
             // 길드 테이블 추가 후 테스트
@@ -179,7 +223,9 @@ namespace MMO_EFCore
                 }
             }
         }
+        #endregion
 
+        #region SelectLoading
         // 특정 길드에 있는 길드원 수를 추출
         // 장점 : 필요한 정보만 빼서 로딩
         // 단점 : 일일히 Select 안에 만들어줘야 하는 부분
@@ -203,6 +249,9 @@ namespace MMO_EFCore
                 Console.WriteLine($"GuildName : ({Info.Name}), MemberCount({Info.MemberCount})");
             }
         }
+        #endregion
+
+        #endregion
 
         public static void ShowItems()
         {
@@ -218,6 +267,7 @@ namespace MMO_EFCore
                 }
             }
         }
+
         ////특정 플레이어가 소지한 아이템들의 CreateDate를 수정
         //public static void UpdateDate()
         //{
