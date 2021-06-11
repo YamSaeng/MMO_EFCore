@@ -232,12 +232,12 @@ namespace MMO_EFCore
                 Guild Guild = DB._Guilds.AsNoTracking()
                     .Where(g => g.GuildName == Name)
                     .Include(g => g.Members) // sql의 select from where에 해당
-                    .ThenInclude(p => p.Item) // Include에 대해서 추가적으로 로딩시켜 주고 싶을 대상이 필요할때 사용
+                    .ThenInclude(p => p.OwnedItem) // Include에 대해서 추가적으로 로딩시켜 주고 싶을 대상이 필요할때 사용
                     .First(); // sql로 따지면 top 1과 동치
 
                 foreach(Player player in Guild.Members)
                 {
-                    Console.WriteLine($"TemplateId({player.Item.ItemId}) Owner ({player.Name})");
+                    Console.WriteLine($"TemplateId({player.OwnedItem.ItemId}) Owner ({player.Name})");
                 }
                 // AsNoTracking 데이터를 읽기전용으로 읽어들인다.
                 // Entity Framework 에서 DB._Items에 변화가 있는지 감시(= 데이터 변경 탐지)하는 Tracking Snapshot이라는 작업을 수행하는데
@@ -280,12 +280,12 @@ namespace MMO_EFCore
                 foreach(Player player in guild.Members)
                 {
                     //player에 있는 item를 로딩 시켜주라는 말
-                    DB.Entry(player).Reference(p => p.Item).Load();
+                    DB.Entry(player).Reference(p => p.OwnedItem).Load();
                 }
 
                 foreach (Player player in guild.Members)
                 {
-                    Console.WriteLine($"TemplateId({player.Item.ItemId}) Owner ({player.Name})");
+                    Console.WriteLine($"TemplateId({player.OwnedItem.ItemId}) Owner ({player.Name})");
                 }
             }
         }
@@ -327,9 +327,9 @@ namespace MMO_EFCore
 
             using (AppDbContext DB = new AppDbContext())
             {
-                foreach (Player Player in DB._Players.AsNoTracking().Where(p => p.Name == Name).Include(P => P.Item))
+                foreach (Player Player in DB._Players.AsNoTracking().Where(p => p.Name == Name).Include(P => P.OwnedItem))
                 {
-                    Console.WriteLine($"{Player.Item.TemplateId}");
+                    Console.WriteLine($"{Player.OwnedItem.TemplateId}");
                 }
             }
         }
@@ -384,7 +384,7 @@ namespace MMO_EFCore
             using (AppDbContext DB = new AppDbContext())
             {
                 Player player = DB._Players
-                    .Include(p => p.Item) //외부키를 nullable가 가능하게 하고 이부분에서 Item을 include해서 로딩하는 부분을 제거하면 아래에서 player를 제거할때 에러가 난다. 
+                    .Include(p => p.OwnedItem) //외부키를 nullable가 가능하게 하고 이부분에서 Item을 include해서 로딩하는 부분을 제거하면 아래에서 player를 제거할때 에러가 난다. 
                                           //include를 이용해 로딩, 즉 추적하지 않으면 외부키를null로 밀수 없기 때문 왠만해선 외부키 로딩은 무조건 해줘야함
                     .Single(p => p.PlayerId == Id);
 
@@ -412,21 +412,21 @@ namespace MMO_EFCore
             using (AppDbContext DB = new AppDbContext())
             {
                 Player player = DB._Players
-                    .Include(p => p.Item)
+                    .Include(p => p.OwnedItem)
                     .Single(p => p.PlayerId == Id);
 
                 //메모리에 들고 있는것처럼 
-                if(player.Item != null)
+                if(player.OwnedItem != null)
                 {
                     //외부키에 접근해서 데이터 수정
-                    player.Item.TemplateId = 777;
-                    player.Item.CreateDate = DateTime.Now;
+                    player.OwnedItem.TemplateId = 777;
+                    player.OwnedItem.CreateDate = DateTime.Now;
                 }
 
                 //이처럼 아이템 새로 생성해서 player에 넣어주면
                 //기존에 있던 아이템 Owner에서 player가 빠지고
                 //새로운 아이템에 player가 Owner로 할당된다.
-                player.Item = new Item()
+                player.OwnedItem = new Item()
                 {
                     TemplateId = 777,
                     CreateDate = DateTime.Now

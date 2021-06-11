@@ -35,7 +35,7 @@ namespace MMO_EFCore
             // Item 테이블에서 데이터를 가지고 올때 SoftDeleted가 false인 대상만 가져올 수 있도록 조건을 걸어줌            
             Builder.Entity<Item>().HasQueryFilter(i => i.SoftDeleted == false);
             // 필터를 무시하고 싶으면 IgnoreQueryFilter 옵션 추가
-
+            #region 설정한 필터 무시하고 싶을 경우
             // item 테이블 순회할때 필터 무시해주고 아래에서 검사해주는 방식의 예
             //foreach (var item in DB._Items.Include(i => i.Owner).IgnoreQueryFilters().ToList())
             //{
@@ -56,6 +56,22 @@ namespace MMO_EFCore
             //    }                
             //}
             // 이런식으로 추가해주면 됨
+            #endregion
+            Builder.Entity<Player>()
+                .HasIndex(p => p.Name) //이름에 Index를 달아줌
+                .HasName("Index_Person_Name") //인덱스 이름 정하기
+                .IsUnique(); //이름이 겹치면 안되므로 Unique로 설정
+            //Builder.Entity<Player>().Property(p => p.Name).IsRequired(); // Name을 Not Null로 설정 isRequired(false) null로 설정
+
+            //Builder.Entity<Player>()
+            //    .HasMany(p => p.CreatedItems)
+            //    .WithOne(i => i.Creator)
+            //    .HasForeignKey(i => i.CreatorId); // 1 : N 관계에서는 N인쪽에서 FK가 잇어서 상대방이 명확하지만
+
+            //Builder.Entity<Player>()
+            //    .HasOne(p => p.OwnedItem)
+            //    .WithOne(i => i.Owner)
+            //    .HasForeignKey<Item>(i => i.Owner); // 1 : 1 관계에서는 어느쪽이 FK인지 확인이 어려워서 명시적으로 타입을 지정해야함
         }
     }
 }
