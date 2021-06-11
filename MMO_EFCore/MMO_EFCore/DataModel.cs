@@ -166,6 +166,7 @@ namespace MMO_EFCore
     // ex) DB에는 json 형태로 string을 저장하고, getter은 json을 가공해서 사용하고자 할때 
     // 일반적으로 Fluent API 방식만 사용    
 
+    #region Entity <-> DB Table 연동하는 다양한 방법들
     // Entity <-> DB Table 연동하는 다양한 방법들
     // 지금까지 사용하던 방식 특정 데이터를 Read / Write 하기 위해 Entity Class를 통으로 읽어들이는 부분에 있어서 부담이 생김
     // 물론 Select Loading, DTO 방식도 있지만 좀 더 기본적인 방법이 있는데 다음과 같다.
@@ -201,19 +202,21 @@ namespace MMO_EFCore
     // b) Fluent API
     // - 기본적으로 부모와 자식을 구분 할 수 있는 enum값이 필요하다.
     // - .HasDiscriminator().HasValue()
-    
+
     // 3) Table Splitting
+    // - 다수의 Entity Class -> 하나의 테이블에 매핑하고 싶을 경우
+    #endregion
+
+    // DB 관계 모델링할때
+    // 1  : 1
+    // 1  : 다
+    // 다 : 다
 
     public enum ItemType
     {
         NormalItem,
         EventItem
     }
-
-    // DB 관계 모델링할때
-    // 1  : 1
-    // 1  : 다
-    // 다 : 다
 
     public class ItemOption
     {
@@ -222,6 +225,12 @@ namespace MMO_EFCore
         public int HP { get; set; }
     }
 
+    // Table Splitting Test
+    public class ItemDetail
+    {
+        public int ItemDetailId { get; set; }
+        public string Description { get; set; }
+    }
     //DbSet<클래스이름> 변수이름 변수이름이 DB에 테이블 이름으로 저장된다.
     //변수명으로 저장하고 싶지 않을때 [Table("저장하고 싶은 테이블 이름")] 이런식으로 지정하면 해당 테이블 명으로 DB에 저장된다.
     //이와 같이 테이블에 해당하는 
@@ -241,6 +250,9 @@ namespace MMO_EFCore
 
         // Owend Type - .OwnsOne() 연습
         public ItemOption Option { get; set; }
+
+        // Table Splitting Test
+        public ItemDetail Detail { get; set; }
 
         //함수를 이용해서 JsonData를 간접적으로 수정할때 해당 함수를 이용해서 _JsonData를 수정하고 있고
         //대신 JsonData에 set가 없기때문에 정작 DB에는 저장이 안되는 상황

@@ -98,6 +98,7 @@ namespace MMO_EFCore
             // Test Backing Field
             // JsonData를 간접적으로 함수호출로 셋팅해주고 넣어준다.
             // Items[0].SetOption(new ItemOption() { Dex = 1, HP = 2, Str = 3 });
+            
             // Test Owned Type
             Items[0].Option = new ItemOption() { Dex = 1, HP = 2, Str = 3 };
             
@@ -105,6 +106,12 @@ namespace MMO_EFCore
             {
                 GuildName = "A1",
                 Members = new List<Player> { SungWon, WonJi, YamSaeng }
+            };
+
+            // Table Splitting Test
+            Items[2].Detail = new ItemDetail()
+            {
+                Description = "This is good Item"
             };
 
             DB._Items.AddRange(Items);
@@ -364,7 +371,7 @@ namespace MMO_EFCore
         {
             using (AppDbContext DB = new AppDbContext())
             {
-                foreach(var item in DB._Items.Include(i=>i.Owner).ToList())
+                foreach(var item in DB._Items.Include(i=>i.Owner).ThenInclude(i => i.OwnedItem.Detail).ToList())
                 {
                     if(item.SoftDeleted)
                     {
@@ -395,6 +402,14 @@ namespace MMO_EFCore
                         if(eventItem != null)
                         {
                             Console.WriteLine("DestroyDate: " + eventItem.DestroyDate);
+                        }
+
+                        // Table Splitting Test
+                        // Table Splitting을 만들때 Relationship을 이용해 관계를 정하므로 
+                        // Include를 이용해 상대방을 로딩시켜주는 추가 작업이 필요하다.
+                        if (item.Detail != null)
+                        {
+                            Console.WriteLine(item.Detail.ItemDetailId);
                         }
 
                         if (item.Owner == null)

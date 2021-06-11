@@ -99,6 +99,16 @@ namespace MMO_EFCore
                 .HasDiscriminator(i => i.Type) //부모 자식 구분할 enum 타입 지정
                 .HasValue<Item>(ItemType.NormalItem) //Item
                 .HasValue<EventItem>(ItemType.EventItem); //EventItem에 각각 어느 타입인지 지정
+
+            // Table Splitting 테스트
+            Builder.Entity<Item>()
+                .HasOne(i => i.Detail) //관계 설정 나와 상대방 여기선 1 : 1 관계
+                .WithOne() //상대방에 내가 필요 없어서 설정하지 않는다.
+                .HasForeignKey<ItemDetail>(i => i.ItemDetailId); // 외부키를 어느쪽에 설정할것인지 결정 ItemDetail의 ItemDetailId를 외부키로 설정한다.
+
+            // 위에서 구성한 Relationship를 토대로 Items테이블에 집어 넣는다.
+            Builder.Entity<Item>().ToTable("Items"); // Item을 Items 테이블에
+            Builder.Entity<ItemDetail>().ToTable("Items"); // ItemDetail을 Items 테이블에
         }
     }
 }
