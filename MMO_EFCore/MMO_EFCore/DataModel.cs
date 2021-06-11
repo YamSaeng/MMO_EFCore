@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -160,18 +161,55 @@ namespace MMO_EFCore
     // 생성 -> .Property<DateTime>("UpdateOn"
     // 접근하고 할때 Read / Write -> .Property("RecoveredDate").CurrentValue를 이용해 읽거나 수정
 
+    // Backing Field (EF Core)
+    // private field를 DB에 매핑하고, public getter로 가공해서 사용
+    // ex) DB에는 json 형태로 string을 저장하고, getter은 json을 가공해서 사용하고자 할때 
+    // 일반적으로 Fluent API 방식만 사용    
 
     // DB 관계 모델링할때
     // 1  : 1
     // 1  : 다
     // 다 : 다
 
+    public struct ItemOption
+    {
+        public int Str;
+        public int Dex;
+        public int HP;
+    }
+        
     //DbSet<클래스이름> 변수이름 변수이름이 DB에 테이블 이름으로 저장된다.
     //변수명으로 저장하고 싶지 않을때 [Table("저장하고 싶은 테이블 이름")] 이런식으로 지정하면 해당 테이블 명으로 DB에 저장된다.
     //이와 같이 테이블에 해당하는 
     [Table("Item")]
     public class Item
     {
+        private string _JsonData;
+        public string JsonData
+        {
+            get { return _JsonData; }
+            //set { _JsonData = value; } 
+            //만약 특정 상황이 생겨서 해당 변수에 대해 set이 없을 경우 
+            //EF Core의 규칙에 의해서 set이 없을 경우 DB에 저장이 되지 않는 문제가 생긴다.
+        }
+
+        //함수를 이용해서 JsonData를 간접적으로 수정할때 해당 함수를 이용해서 _JsonData를 수정하고 있고
+        //대신 JsonData에 set가 없기때문에 정작 DB에는 저장이 안되는 상황
+        //이럴 경우에 쓰는 방식이 Backing Field 방식이다.
+        //Fluent API에 다음과 같이 작성한다.
+        //Builder.Entity<Item>() // ItemEntity에서
+        //    .Property(i => i.JsonData) //JsonData라고 하는 변수에
+        //    .HasField("_JsonData"); //_JsonData를 연동시켜줘 라고 하는 방식
+        public void SetOption(ItemOption Option)
+        {
+            _JsonData = JsonConvert.SerializeObject(Option);
+        }
+
+        public ItemOption GetOption()
+        {
+            return JsonConvert.DeserializeObject<ItemOption>(_JsonData);
+        }
+
         //해당 아이템이 삭제 대기 중인지 아닌지 
         public bool SoftDeleted { get; set; }
         //PrimaryKey

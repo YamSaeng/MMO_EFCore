@@ -94,6 +94,10 @@ namespace MMO_EFCore
             // 숨겨진 프로퍼티 값 가져와서 수정하기
             DB.Entry(Items[0]).Property("RecoveredDate").CurrentValue = DateTime.Now;
 
+            // Test Backing Field
+            // JsonData를 간접적으로 함수호출로 셋팅해주고 넣어준다.
+            // Items[0].SetOption(new ItemOption() { Dex = 1, HP = 2, Str = 3 });
+
             Guild Guild = new Guild()
             {
                 GuildName = "A1",
