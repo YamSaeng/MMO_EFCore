@@ -190,8 +190,25 @@ namespace MMO_EFCore
     // b) 다른 테이블에 추가
     // - .OwnsOne().Totable()
 
-    // 2) Table Per Hierarchy (TPH)    
+    // 2) Table Per Hierarchy (TPH) 
+    // - 상속 관계의 여러 class -> 하나의 테이블에 매핑하고 싶을 경우
+    // a) Convention
+    // - class를 상속받아서 만들고, DBSet에 추가하면 테이블에 저장된다.
+    // - 저장될때 테이블이 따로 만들어져야 할거 같지만 합쳐서 상속관계라면 부모 테이블에 합쳐서 저장이된다.
+    // - 기본적으로 합쳐서 저장되기때문에 구분을 해야하는데, EF에서 알아서 Discriminator이라는 Column을 생성하고 해당 Column은 string으로 클래스를 구분해준다.
+    // - 이 경우에는 Item을 저장할때는 Item에 접근해야하고 EventItem을 저장할떄는 EventItem을 저장해야하는 부분에서 있어서 불편할 수 있는데,
+    // - Fluent API를 통해 보다 쉽게 할 수 있다.
+    // b) Fluent API
+    // - 기본적으로 부모와 자식을 구분 할 수 있는 enum값이 필요하다.
+    // - .HasDiscriminator().HasValue()
+    
     // 3) Table Splitting
+
+    public enum ItemType
+    {
+        NormalItem,
+        EventItem
+    }
 
     // DB 관계 모델링할때
     // 1  : 1
@@ -211,6 +228,8 @@ namespace MMO_EFCore
     [Table("Item")]
     public class Item
     {
+        public ItemType Type { get; set; }
+
         private string _JsonData;
         public string JsonData
         {
@@ -258,6 +277,11 @@ namespace MMO_EFCore
 
         public int? CreatorId { get; set; }
         public Player Creator { get; set; }
+    }
+
+    public class EventItem : Item
+    {
+        public DateTime DestroyDate { get; set; }
     }
 
     //1 : 다 구조

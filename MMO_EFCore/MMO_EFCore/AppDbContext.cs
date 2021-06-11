@@ -18,6 +18,13 @@ namespace MMO_EFCore
         // DbSet<Item> -> EF Core한테 알려준다.
         // _Items이라는 DB 테이블이 있는데, 세부적인 칼럼/키 정보를 Item클래스에서 참고하라고 알려준다는 의미
         public DbSet<Item> _Items { get; set; }
+        // TPH 테스트용
+        // 이벤트 아이템 테이블이 따로 만들어져야 하지만 EventItem이 Item을 상속받고 있기 때문에
+        // Item 테이블에 합쳐서 저장된다.
+        // 그렇다면 부모와 자식을 어떻게 구분할까?
+        // 자식을 테이블에 저장할때 Discriminator라는 Column을 생성해주는데, 여기에 string으로 클래스 이름으로 관리한다.        
+        //public DbSet<EventItem> _EventItems { get; set; }
+
         public DbSet<Player> _Players { get; set; }
         public DbSet<Guild> _Guilds { get; set; }
 
@@ -86,6 +93,12 @@ namespace MMO_EFCore
                 .OwnsOne(i => i.Option) // Item Entity에 Option이라는 값이 있는데 그것들 토대로
                 .ToTable("ItemOption"); // ItemOption 테이블을 만들어라 라는 뜻
                                         // 이처럼 테이블을 만들어주면 Option을 가지고 있는 기본키가 해당 테이블에 기본키가 되면서 동시에 외부키가 된다.
+
+            // TPH 테스트
+            Builder.Entity<Item>()
+                .HasDiscriminator(i => i.Type) //부모 자식 구분할 enum 타입 지정
+                .HasValue<Item>(ItemType.NormalItem) //Item
+                .HasValue<EventItem>(ItemType.EventItem); //EventItem에 각각 어느 타입인지 지정
         }
     }
 }

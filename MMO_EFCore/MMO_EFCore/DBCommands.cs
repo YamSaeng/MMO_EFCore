@@ -76,11 +76,12 @@ namespace MMO_EFCore
                     CreateDate = DateTime.Now,
                     Owner = SungWon
                 },
-                new Item()
+                new EventItem()
                 {
                     TemplateId = 102,
                     CreateDate = DateTime.Now,
-                    Owner = WonJi
+                    Owner = WonJi,
+                    DestroyDate = DateTime.Now
                 },
                 new Item()
                 {
@@ -377,6 +378,23 @@ namespace MMO_EFCore
                         if (item.Option != null) 
                         {
                             Console.WriteLine("STR " + item.Option.Str);
+                        }
+
+                        // Test TPH
+                        // 타입으로 구분하거나
+                        switch (item.Type)
+                        {
+                            case ItemType.EventItem:
+                                break;
+                            case ItemType.NormalItem:
+                                break;
+                        }
+
+                        // 캐스팅으로 구분하거나
+                        EventItem eventItem = item as EventItem;
+                        if(eventItem != null)
+                        {
+                            Console.WriteLine("DestroyDate: " + eventItem.DestroyDate);
                         }
 
                         if (item.Owner == null)
