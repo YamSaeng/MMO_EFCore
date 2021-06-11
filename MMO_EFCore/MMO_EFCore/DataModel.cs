@@ -152,6 +152,15 @@ namespace MMO_EFCore
     // .HasForeignKey()  .IsRequired()  .OnDelete()
     // .HasConstraintName()  .HasPrincipalKey()
 
+    // Showdow Property + Backing Field
+    // Class에는 있지만 DB에는 적용하고 싶지 않을때 -> [NotMapped] .Ignore()
+    // DB에는 있지만 Class에는 없을때 -> Shadow Property
+    // 예를 들어 RecoveredDate(아이템을 잃어버렸다가 복구한날짜)와 같은 column이 있을때
+    // DB에 있어서 기록 할 수 있지만 굳이 class에는 안가지고 잇어도 될거같은 변수들 ( 데이터를 숨기는 것 )
+    // 생성 -> .Property<DateTime>("UpdateOn"
+    // 접근하고 할때 Read / Write -> .Property("RecoveredDate").CurrentValue를 이용해 읽거나 수정
+
+
     // DB 관계 모델링할때
     // 1  : 1
     // 1  : 다

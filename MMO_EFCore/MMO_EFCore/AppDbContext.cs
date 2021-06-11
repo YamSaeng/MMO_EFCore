@@ -72,6 +72,9 @@ namespace MMO_EFCore
             //    .HasOne(p => p.OwnedItem)
             //    .WithOne(i => i.Owner)
             //    .HasForeignKey<Item>(i => i.Owner); // 1 : 1 관계에서는 어느쪽이 FK인지 확인이 어려워서 명시적으로 타입을 지정해야함
+
+            // shadow Property
+            Builder.Entity<Item>().Property<DateTime>("RecoveredDate");
         }
     }
 }

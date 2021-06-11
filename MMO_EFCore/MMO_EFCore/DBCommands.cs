@@ -90,6 +90,10 @@ namespace MMO_EFCore
                 }
             };
 
+            // Test Shadow Property Value Write
+            // 숨겨진 프로퍼티 값 가져와서 수정하기
+            DB.Entry(Items[0]).Property("RecoveredDate").CurrentValue = DateTime.Now;
+
             Guild Guild = new Guild()
             {
                 GuildName = "A1",
