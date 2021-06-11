@@ -92,12 +92,14 @@ namespace MMO_EFCore
 
             // Test Shadow Property Value Write
             // 숨겨진 프로퍼티 값 가져와서 수정하기
-            DB.Entry(Items[0]).Property("RecoveredDate").CurrentValue = DateTime.Now;
+            // DB.Entry(Items[0]).Property("RecoveredDate").CurrentValue = DateTime.Now;
 
             // Test Backing Field
             // JsonData를 간접적으로 함수호출로 셋팅해주고 넣어준다.
             // Items[0].SetOption(new ItemOption() { Dex = 1, HP = 2, Str = 3 });
-
+            // Test Owned Type
+            Items[0].Option = new ItemOption() { Dex = 1, HP = 2, Str = 3 };
+            
             Guild Guild = new Guild()
             {
                 GuildName = "A1",
@@ -363,14 +365,29 @@ namespace MMO_EFCore
             {
                 foreach(var item in DB._Items.Include(i=>i.Owner).ToList())
                 {
-                    if(item.Owner == null)
+                    if(item.SoftDeleted)
                     {
-                        Console.WriteLine($"ItemId({item.ItemId}) TemplateId({item.TemplateId})Owner (0)");
+                        Console.WriteLine("");
                     }
                     else
                     {
-                        Console.WriteLine($"ItemId({item.ItemId}) TemplateId({item.TemplateId}) OwnerId({item.Owner.PlayerId}) Owner({item.Owner.Name})");
-                    }
+                        // Test Owned Type
+                        // ItemOption이 클래스로 선언은 되엇지만 Ownership으로 되어 있기때문에 Include를 이용해 데이터를 읽어올 필요가 없다.
+                        // 당연한 것이지만 데이터를 넣지 않앗다면 item.Option은 null일 수 잇다.                        
+                        if (item.Option != null) 
+                        {
+                            Console.WriteLine("STR " + item.Option.Str);
+                        }
+
+                        if (item.Owner == null)
+                        {
+                            Console.WriteLine($"ItemId({item.ItemId}) TemplateId({item.TemplateId})Owner (0)");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"ItemId({item.ItemId}) TemplateId({item.TemplateId}) OwnerId({item.Owner.PlayerId}) Owner({item.Owner.Name})");
+                        }
+                    }                    
                 }
             }
         }

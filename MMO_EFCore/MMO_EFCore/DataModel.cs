@@ -125,27 +125,27 @@ namespace MMO_EFCore
     //        public Player Owner
     // [InverseProperty] - 다수의 Navigational Property를 참조할떄의 해결방법
     // ex) [InverseProperty("짝꿍이름")]
-    //      public class Item
-    //      {
-    //          public int OwnerId { get; set; }
-    //          [InverseProperty("OwnedItem")] Owner에 대응되는 Item을 OwnedItem으로 설정
-    //          public Player Owner { get; set; }
-    //          public int CreatorId { get; set; }
-    //          [InverseProperty("CreatedItems")] Creator에 대응되는 Item을 CreatedItems으로 설정
-    //          public Player Creator { get; set; }
-    //      }
-    //      반대의 경우도 성립된다. 위에서는 Player에 연동되는 Item을 설정한것이라면
-    //      아래처럼 Item에 연동되는 Player를 설정할 수도 있는것
-    //      Mssql 버그중 하나로 FK를 둘다 Nullable로 설정하지 않고 같은 테이블을 참조하면 나중에 Cascade할때 에러를 내뱉는 버그가 잇어서
-    //      둘 중 하나는 Nullable로 설정해줘야한다.
+    //  public class Item
+    //  {
+    //      public int OwnerId { get; set; }
+    //      [InverseProperty("OwnedItem")] Owner에 대응되는 Item을 OwnedItem으로 설정
+    //      public Player Owner { get; set; }
+    //      public int CreatorId { get; set; }
+    //      [InverseProperty("CreatedItems")] Creator에 대응되는 Item을 CreatedItems으로 설정
+    //      public Player Creator { get; set; }
+    //  }
+    //  반대의 경우도 성립된다. 위에서는 Player에 연동되는 Item을 설정한것이라면
+    //  아래처럼 Item에 연동되는 Player를 설정할 수도 있는것
+    //  Mssql 버그중 하나로 FK를 둘다 Nullable로 설정하지 않고 같은 테이블을 참조하면 나중에 Cascade할때 에러를 내뱉는 버그가 잇어서
+    //  둘 중 하나는 Nullable로 설정해줘야한다.
 
-    //      public class Player
-    //      {
-    //          [InverseProperty("Owner")] OwnedItem에 대응되는 Player를 Owner로
-    //          public Item OwnedItem { get; set; }
-    //          [InverseProperty("Creator")] CreatedItems에 대응되는 Player를 Creator로
-    //          public ICollection<Item> CreatedItems { get; set; }
-    //      }
+    //  public class Player
+    //  {
+    //      [InverseProperty("Owner")] OwnedItem에 대응되는 Player를 Owner로
+    //      public Item OwnedItem { get; set; }
+    //      [InverseProperty("Creator")] CreatedItems에 대응되는 Player를 Creator로
+    //      public ICollection<Item> CreatedItems { get; set; }
+    //  }
 
     // Fluent API로 Relationship 설정
     // .HasOne() - 1 : 1 관계   .HasMany() - 1 : N  나
@@ -166,18 +166,45 @@ namespace MMO_EFCore
     // ex) DB에는 json 형태로 string을 저장하고, getter은 json을 가공해서 사용하고자 할때 
     // 일반적으로 Fluent API 방식만 사용    
 
+    // Entity <-> DB Table 연동하는 다양한 방법들
+    // 지금까지 사용하던 방식 특정 데이터를 Read / Write 하기 위해 Entity Class를 통으로 읽어들이는 부분에 있어서 부담이 생김
+    // 물론 Select Loading, DTO 방식도 있지만 좀 더 기본적인 방법이 있는데 다음과 같다.
+
+    // 1) Owned Type
+    // - 일반 Class를 Entity Class에 추가하는 개념
+    // public class ItemOption
+    // {
+    //     public int Str { get; set; }
+    //     public int Dex { get; set; }
+    //     public int HP { get; set; }
+    // }
+    // ItemOption 클래스를 Item에 추가할때 해당 클래스가 Navigational 프로퍼티로써 별도의 테이블이 아닌 값으로 연동시켜주고 싶을 경우
+    // 즉,  public class Item { public ItemOption Option {get;set;} }
+    //   -> public class Item { public int Str{get;set;} public int Dex{get;set;} public int HP {get;set;} } 이런식으로 인식되어서 사용하고 싶을 경우가 생길 수 있다.
+    // ItemOption option 변수로 들어가 있지만 테이블로는 따로 관리가 안되고 값 그자체로 인식 되고 싶을 경우를 의미
+    // a) 동일한 테이블에 추가하고 싶을 경우
+    // - .OwnsOne()
+    // 기존처럼 Relationship 방식으로 했을 경우에는 기본적으로 FK로 빠져있기때문에 정보가 자동으로 추가되지 않아 .Include를 통해 데이터를 긁어왓어야 했는데,
+    // 위처럼 Relationshuip이 아닌 Ownership의 개념은 .include를 통해 데이터를 긁어올 필요 없이 자동으로 데이터가 로딩된다.
+    // 하나의 테이블안에서 관련된 변수들을 하나의 클래스로 묶어서 관리하고자 할때 사용하면 편함    
+    // b) 다른 테이블에 추가
+    // - .OwnsOne().Totable()
+
+    // 2) Table Per Hierarchy (TPH)    
+    // 3) Table Splitting
+
     // DB 관계 모델링할때
     // 1  : 1
     // 1  : 다
     // 다 : 다
 
-    public struct ItemOption
+    public class ItemOption
     {
-        public int Str;
-        public int Dex;
-        public int HP;
+        public int Str { get; set; }
+        public int Dex { get; set; }
+        public int HP { get; set; }
     }
-        
+
     //DbSet<클래스이름> 변수이름 변수이름이 DB에 테이블 이름으로 저장된다.
     //변수명으로 저장하고 싶지 않을때 [Table("저장하고 싶은 테이블 이름")] 이런식으로 지정하면 해당 테이블 명으로 DB에 저장된다.
     //이와 같이 테이블에 해당하는 
@@ -192,6 +219,9 @@ namespace MMO_EFCore
             //만약 특정 상황이 생겨서 해당 변수에 대해 set이 없을 경우 
             //EF Core의 규칙에 의해서 set이 없을 경우 DB에 저장이 되지 않는 문제가 생긴다.
         }
+
+        // Owend Type - .OwnsOne() 연습
+        public ItemOption Option { get; set; }
 
         //함수를 이용해서 JsonData를 간접적으로 수정할때 해당 함수를 이용해서 _JsonData를 수정하고 있고
         //대신 JsonData에 set가 없기때문에 정작 DB에는 저장이 안되는 상황
@@ -258,7 +288,7 @@ namespace MMO_EFCore
         public string Name { get; set; }
 
         [InverseProperty("Owner")]
-        public Item OwnedItem { get; set; }        
+        public Item OwnedItem { get; set; }
         [InverseProperty("Creator")]
         public ICollection<Item> CreatedItems { get; set; }
 

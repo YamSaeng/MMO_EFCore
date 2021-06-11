@@ -57,11 +57,13 @@ namespace MMO_EFCore
             //}
             // 이런식으로 추가해주면 됨
             #endregion
+
+            #region 프로퍼티에 Index추가하고 Unique옵션 추가 하기
             Builder.Entity<Player>()
                 .HasIndex(p => p.Name) //이름에 Index를 달아줌
                 .HasName("Index_Person_Name") //인덱스 이름 정하기
                 .IsUnique(); //이름이 겹치면 안되므로 Unique로 설정
-            //Builder.Entity<Player>().Property(p => p.Name).IsRequired(); // Name을 Not Null로 설정 isRequired(false) null로 설정
+                             //Builder.Entity<Player>().Property(p => p.Name).IsRequired(); // Name을 Not Null로 설정 isRequired(false) null로 설정
 
             //Builder.Entity<Player>()
             //    .HasMany(p => p.CreatedItems)
@@ -72,9 +74,18 @@ namespace MMO_EFCore
             //    .HasOne(p => p.OwnedItem)
             //    .WithOne(i => i.Owner)
             //    .HasForeignKey<Item>(i => i.Owner); // 1 : 1 관계에서는 어느쪽이 FK인지 확인이 어려워서 명시적으로 타입을 지정해야함
+            #endregion
 
             // shadow Property
             Builder.Entity<Item>().Property<DateTime>("RecoveredDate");
+
+            //Owned Type
+            //Builder.Entity<Item>()
+            //    .OwnsOne(i => i.Option); //클래스 타입이지만 테이블로 따로 관리하지 않고 클래스 안에 있는 데이터 그 자체를 값으로써 추가해준다.
+            Builder.Entity<Item>()
+                .OwnsOne(i => i.Option) // Item Entity에 Option이라는 값이 있는데 그것들 토대로
+                .ToTable("ItemOption"); // ItemOption 테이블을 만들어라 라는 뜻
+                                        // 이처럼 테이블을 만들어주면 Option을 가지고 있는 기본키가 해당 테이블에 기본키가 되면서 동시에 외부키가 된다.
         }
     }
 }
