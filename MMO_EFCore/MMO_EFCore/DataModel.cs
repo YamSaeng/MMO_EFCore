@@ -347,9 +347,14 @@ namespace MMO_EFCore
     //     - 특정 마이그레이션으로 이동 : Update-Database 마이그레이션이름 이렇게 입력하면 해당 마이그레이션 상태로 돌려준다.
     //     - 마지막 Migration 삭제 (Remove-Migration)
 
-    // 2) Database - First
+    // 2) Database - First 
+    // - Code-First 와는 반대로 DB쪽이 원본이고 거기에 맞춰서 DbContext를 작성하는 방식
+    // - DB 를 보면서 DBContext 작성
 
     // 3) SQL - First
+    // - SQL 쿼리문을 직접 작성해서 Migration 만드는 방법
+    // - Code - First (1) SQL chagne script를 이용하는 방법
+    // - DB 끼리의 비교를 이용해서 SQL를 추출하는 방법 
 
     #endregion
 
