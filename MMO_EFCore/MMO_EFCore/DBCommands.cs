@@ -75,7 +75,7 @@ namespace MMO_EFCore
         // 2) 데이터를 연결한다.
         public static void CreateTestData(AppDbContext DB)
         {
-            Player SungWon = new Player() { Name = "SungWon" };
+            Player SungWon = new Player() {};
             Player WonJi = new Player() { Name = "WonJi" };
             Player YamSaeng = new Player() { Name = "YamSaeng" };
 
@@ -92,20 +92,17 @@ namespace MMO_EFCore
                 new Item()
                 {
                     TemplateId = 101,
-                    CreateDate = DateTime.Now,
                     Owner = SungWon
                 },
                 new EventItem()
                 {
                     TemplateId = 102,
-                    CreateDate = DateTime.Now,
                     Owner = WonJi,
                     DestroyDate = DateTime.Now
                 },
                 new Item()
                 {
                     TemplateId = 103,
-                    CreateDate = DateTime.Now,
                     Owner = YamSaeng
                 }
             };
@@ -512,7 +509,6 @@ namespace MMO_EFCore
                 {
                     //외부키에 접근해서 데이터 수정
                     player.OwnedItem.TemplateId = 777;
-                    player.OwnedItem.CreateDate = DateTime.Now;
                 }
 
                 //이처럼 아이템 새로 생성해서 player에 넣어주면
@@ -521,7 +517,6 @@ namespace MMO_EFCore
                 player.OwnedItem = new Item()
                 {
                     TemplateId = 777,
-                    CreateDate = DateTime.Now
                 };
 
                 DB.SaveChanges();

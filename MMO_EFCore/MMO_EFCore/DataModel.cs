@@ -1,4 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.ValueGeneration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -258,6 +261,53 @@ namespace MMO_EFCore
     }
     #endregion
 
+    #region 초기값 (Default Value)
+    // 특정 프로퍼티의 값을 말 그대로 초기값을 주고 싶을 경우를 의미
+    // 특히나 DateTime 경우 매우 유용하다고 할 수 있다.    
+    // 유의 해야할 점
+    // 1) Entity Class 자체의 초기값으로 붙는건지
+    // -> = 메모리상에서의 초기값
+    // 2) DB Table 차원에서 초기값으로 적용 되는건지
+    // -> = DB상에서의 초기값
+    // - 결과는 같다고 생각할 수 있지만,
+    // 만약, EF <-> DB 외에 다른 경로로 DB를 사용하는 경우 차이가 날 수 있다.
+
+    // 기본값 설정하는 방법
+    // 1) Auto - Property Initializer (C# 6.0) - 프로퍼티 옆에 초기값 쓰고 ; 붙이면 됨
+    // - Entity 차원에서의 초기값으로서 SaveChanges를 호출하지 않으면 DB에 적용되지 않는다.
+    // - 따라서 외부에서 SQL문법으로 쿼리를 날리면 초기값이 적용되지 않고 SQL 쿼리 그대로 DB에 적용되는 점이 있다.
+    // 2) Fluent API
+    // - DB Table에 초기값을 적용 시킨다. ( DEFAULT )
+    // Builder.Entity<Item>()
+    //        .Property(초기값 적용할 프로퍼티 이름)
+    //        .HasDefaultValue(초기값);
+    // - 이와 같은 경우에 기본 타입들은 초기값을 적용시킬 수 있지만 시간과 같은 경우에 애매한데, 이유는 다음과 같다.
+    // 만약 .HasDefaultValue(DateTime.Now)를 이용해 시간을 적용해도 구문 그대로 해당 함수를 실행했을때의 값이
+    // 초기값으로 설정되기때문에 새로운 데이터가 들어오더라도 들어온 시점의 시간이 추가 되지 않는 문제점이 생긴다.
+    // 3) SQL Fragment ( 새로운 값이 추가되는 시점에 DB쪽에서 실행 )
+    // - .HasDefaultValueSql
+    // Builder.Entity<Item>()
+    //        .Property("CreateData")
+    //        .HasDefaultValueSql("GETDATE()"); -- 이처럼 Sql 명령어 조각을 넣어주는 방식
+    // 단 이렇게 설정하면 외부에서 해당 변수를 수정 할 수 없게 private으로 막아줘야 의미가 있다고 할 수 있다.
+    // 4) Value Generator (EF Core에서 실행된다)
+    // - 일종의 Generator 규칙 (초기값을 생성하는 규칙을 정할 수 있음) 
+
+    public class PlayerNameGenerator : ValueGenerator<string>
+    {
+        //임시값을 생성 할 것인지
+        //false로 해서 내가 정해준 값으로 할것이라고 해줌
+        public override bool GeneratesTemporaryValues => false;
+                
+        public override string Next(EntityEntry entry)
+        {
+            string name = $"Player_+{DateTime.Now.ToString("yyyymmdd")}";
+            return name;
+        }
+    }
+
+    #endregion
+
     // DB 관계 모델링할때
     // 1  : 1
     // 1  : 다
@@ -326,10 +376,10 @@ namespace MMO_EFCore
         //해당 아이템이 삭제 대기 중인지 아닌지 
         public bool SoftDeleted { get; set; }
         //PrimaryKey
-        public int ItemId { get; set; }
+        public int ItemId { get; set; } = 0;
         //해당 아이템의 종류를 구분할 ID
         public int TemplateId { get; set; }
-        public DateTime CreateDate { get; set; }
+        public DateTime CreateDate { get; private set; }
 
         //다른 클래스 참조 -> 외부키 ( EF에서는 외부키를 Navigational Property라고 부름 )
         //외부키로 존재하면 외부키를 들고 잇는 클래스를 DB에 저장할떄 알아서 외부키를 저장해준다.

@@ -112,9 +112,26 @@ namespace MMO_EFCore
             Builder.Entity<Item>().ToTable("Items"); // Item을 Items 테이블에
             Builder.Entity<ItemDetail>().ToTable("Items"); // ItemDetail을 Items 테이블에
 
+            #region UDF Test
             // UDF Test
             // GetAverageReviewScore를 DB Function으로 만들어줌
             Builder.HasDbFunction(() => Program.GetAverageReviewScore(0));
+            #endregion
+
+            #region Defalut Value
+            // Default Value Test
+            Builder.Entity<Item>()
+                .Property("CreateData")
+                .HasDefaultValue(new DateTime(2021, 1, 1));
+
+            Builder.Entity<Item>()
+                .Property("CreateData")
+                .HasDefaultValueSql("GETDATE()");
+
+            Builder.Entity<Player>()
+                .Property(p => p.Name)
+                .HasValueGenerator((p, e) => new PlayerNameGenerator());
+            #endregion
         }
     }
 }
