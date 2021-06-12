@@ -30,6 +30,25 @@ namespace MMO_EFCore
                 //DB 새로 생성
                 DB.Database.EnsureCreated();
 
+                // UDF Test
+                // 함수 DB에 등록시키기
+                string Command =
+                    // 함수를 생성한다 GetAverageReviewScore sql로 내용을 채워준후
+                    // .ExecuteSqlRaw 함수로 등록한다.
+                    @" CREATE FUNCTION GetAverageReviewScore (@itemId INT) RETURNS FLOAT
+                       AS
+                       BEGIN
+                       DECLARE @Result AS FLOAT
+
+                       SELECT @Result = AVG(CAST([Score] AS FLOAT))
+                       FROM ItemReview AS r
+                       WHERE @itemId = r.ItemId
+
+                       RETURN @result
+                       END";
+
+                DB.Database.ExecuteSqlRaw(Command);
+
                 //테스트 데이터 생성
                 CreateTestData(DB);
                 Console.WriteLine("DB Initialized");
@@ -98,10 +117,10 @@ namespace MMO_EFCore
             // Test Backing Field
             // JsonData를 간접적으로 함수호출로 셋팅해주고 넣어준다.
             // Items[0].SetOption(new ItemOption() { Dex = 1, HP = 2, Str = 3 });
-            
+
             // Test Owned Type
             Items[0].Option = new ItemOption() { Dex = 1, HP = 2, Str = 3 };
-            
+
             Guild Guild = new Guild()
             {
                 GuildName = "A1",
@@ -112,6 +131,21 @@ namespace MMO_EFCore
             Items[2].Detail = new ItemDetail()
             {
                 Description = "This is good Item"
+            };
+
+            // UDF Test
+            Items[0].Reviews = new List<ItemReview>()
+            {
+                new ItemReview() {Score = 5},
+                new ItemReview() {Score = 3},
+                new ItemReview() {Score = 2},
+            };
+
+            Items[1].Reviews = new List<ItemReview>()
+            {
+                new ItemReview() {Score = 1},
+                new ItemReview() {Score = 1},
+                new ItemReview() {Score = 0},
             };
 
             DB._Items.AddRange(Items);
@@ -162,18 +196,18 @@ namespace MMO_EFCore
                 DB.SaveChanges(); // 3) 에 해당
             }
         }
-        
+
         public static void ShowGuilds()
         {
             using (AppDbContext DB = new AppDbContext())
             {
-                foreach(var guild in DB._Guilds.MapGuildToDto())
+                foreach (var guild in DB._Guilds.MapGuildToDto())
                 {
                     Console.WriteLine($"GuildId ({guild.GuildId}) GuildName ({guild.Name}) MemberCount ({guild.MemberCount})");
                 }
             }
         }
-        
+
         // 장점 : 최소한의 정보로 Update 가능
         // 단점 : Read 두번하는것이 단점
         public static void UpdateByReload()
@@ -201,7 +235,7 @@ namespace MMO_EFCore
             ShowGuilds();
         }
 
-        
+
         public static string MakeUpdateJsonStr()
         {
             var JsonStr = "{\"GuildId\":1, \"GuildName\":\"Hello\", \"Members\":null}";
@@ -253,7 +287,7 @@ namespace MMO_EFCore
                     .ThenInclude(p => p.OwnedItem) // Include에 대해서 추가적으로 로딩시켜 주고 싶을 대상이 필요할때 사용
                     .First(); // sql로 따지면 top 1과 동치
 
-                foreach(Player player in Guild.Members)
+                foreach (Player player in Guild.Members)
                 {
                     Console.WriteLine($"TemplateId({player.OwnedItem.ItemId}) Owner ({player.Name})");
                 }
@@ -294,8 +328,8 @@ namespace MMO_EFCore
                 // 명시적으로 로딩
                 // Guild에 있는 Members를 로딩 시켜주라는 말
                 DB.Entry(guild).Collection(g => g.Members).Load();
-                
-                foreach(Player player in guild.Members)
+
+                foreach (Player player in guild.Members)
                 {
                     //player에 있는 item를 로딩 시켜주라는 말
                     DB.Entry(player).Reference(p => p.OwnedItem).Load();
@@ -323,7 +357,7 @@ namespace MMO_EFCore
             {
                 //SELECT COUNT(*) 처럼 특정 값을 설정해서 추출해줄수 있는 기능
                 var Info = DB._Guilds.Where(g => g.GuildName == Name)
-                    .Select(g=> new GuildDTO() //new 를 이용해 익명의 값이 아닌 GuildDTO를 이용해 명시적으로 값을 알게 함    
+                    .Select(g => new GuildDTO() //new 를 이용해 익명의 값이 아닌 GuildDTO를 이용해 명시적으로 값을 알게 함    
                     {
                         Name = g.GuildName,
                         MemberCount = g.Members.Count
@@ -371,9 +405,9 @@ namespace MMO_EFCore
         {
             using (AppDbContext DB = new AppDbContext())
             {
-                foreach(var item in DB._Items.Include(i=>i.Owner).ThenInclude(i => i.OwnedItem.Detail).ToList())
+                foreach (var item in DB._Items.Include(i => i.Owner).ThenInclude(i => i.OwnedItem.Detail).ToList())
                 {
-                    if(item.SoftDeleted)
+                    if (item.SoftDeleted)
                     {
                         Console.WriteLine("");
                     }
@@ -382,7 +416,7 @@ namespace MMO_EFCore
                         // Test Owned Type
                         // ItemOption이 클래스로 선언은 되엇지만 Ownership으로 되어 있기때문에 Include를 이용해 데이터를 읽어올 필요가 없다.
                         // 당연한 것이지만 데이터를 넣지 않앗다면 item.Option은 null일 수 잇다.                        
-                        if (item.Option != null) 
+                        if (item.Option != null)
                         {
                             Console.WriteLine("STR " + item.Option.Str);
                         }
@@ -399,7 +433,7 @@ namespace MMO_EFCore
 
                         // 캐스팅으로 구분하거나
                         EventItem eventItem = item as EventItem;
-                        if(eventItem != null)
+                        if (eventItem != null)
                         {
                             Console.WriteLine("DestroyDate: " + eventItem.DestroyDate);
                         }
@@ -420,7 +454,7 @@ namespace MMO_EFCore
                         {
                             Console.WriteLine($"ItemId({item.ItemId}) TemplateId({item.TemplateId}) OwnerId({item.Owner.PlayerId}) Owner({item.Owner.Name})");
                         }
-                    }                    
+                    }
                 }
             }
         }
@@ -443,7 +477,7 @@ namespace MMO_EFCore
             {
                 Player player = DB._Players
                     .Include(p => p.OwnedItem) //외부키를 nullable가 가능하게 하고 이부분에서 Item을 include해서 로딩하는 부분을 제거하면 아래에서 player를 제거할때 에러가 난다. 
-                                          //include를 이용해 로딩, 즉 추적하지 않으면 외부키를null로 밀수 없기 때문 왠만해선 외부키 로딩은 무조건 해줘야함
+                                               //include를 이용해 로딩, 즉 추적하지 않으면 외부키를null로 밀수 없기 때문 왠만해선 외부키 로딩은 무조건 해줘야함
                     .Single(p => p.PlayerId == Id);
 
                 DB._Players.Remove(player);
@@ -474,7 +508,7 @@ namespace MMO_EFCore
                     .Single(p => p.PlayerId == Id);
 
                 //메모리에 들고 있는것처럼 
-                if(player.OwnedItem != null)
+                if (player.OwnedItem != null)
                 {
                     //외부키에 접근해서 데이터 수정
                     player.OwnedItem.TemplateId = 777;
@@ -569,7 +603,7 @@ namespace MMO_EFCore
             {
                 Item item = DB._Items.Find(Id);
                 //DB._Items.Remove(item); //보통 이렇게 삭제하지 않고 따로 변수를 둬서 삭제 대기 중이라는 것을 기록해둔다.
-                item.SoftDeleted = true; 
+                item.SoftDeleted = true;
                 DB.SaveChanges();
             }
 
@@ -578,6 +612,23 @@ namespace MMO_EFCore
         }
         #endregion
 
+        public static void CalcAverage()
+        {
+            using (AppDbContext DB = new AppDbContext())
+            {
+                foreach(double? Average in DB._Items.Select(i => Program.GetAverageReviewScore(i.ItemId)))
+                {
+                    if(Average ==null)
+                    {
+                        Console.WriteLine("No Review");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Average : {Average.Value}");
+                    }
+                }
+            }
+        }
         ////특정 플레이어가 소지한 아이템들의 CreateDate를 수정
         //public static void UpdateDate()
         //{

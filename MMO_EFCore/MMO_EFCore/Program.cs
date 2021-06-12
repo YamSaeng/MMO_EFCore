@@ -1,9 +1,18 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace MMO_EFCore
 {
     class Program
     {
+        // UDF Test
+        // Annotation (데이터 주석 방식으로 DB함수로 만들어줌)
+        [DbFunction()]
+        public static double? GetAverageReviewScore(int ItemID)
+        {
+            throw new NotImplementedException("사용 금지!"); // c# 에서 호출하면 예외 발생 시키도록
+        }
+
         static void Main(string[] args)
         {
             DBCommands.InitializeDB(ForceReset: false);
@@ -11,6 +20,7 @@ namespace MMO_EFCore
             Console.WriteLine("명령어 입력 : ");
             Console.WriteLine("[0] Force Reset");
             Console.WriteLine("[1] Show Item");
+            Console.WriteLine("[2] CalcAverage");
 
             while (true)
             {
@@ -28,6 +38,7 @@ namespace MMO_EFCore
                         //DBCommands.UpdateByReload();
                         break;
                     case "2":
+                        DBCommands.CalcAverage();
                         //DBCommands.UpdateByFull();
                         //DBCommands.EagarLoading();
                         //DBCommands.UpdateDate();

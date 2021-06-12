@@ -207,6 +207,57 @@ namespace MMO_EFCore
     // - 다수의 Entity Class -> 하나의 테이블에 매핑하고 싶을 경우
     #endregion
 
+    #region User Defined Function (UDF)
+    // User Defined Function (UDF)
+    // 우리가 직접 만든 SQL을 호출하게 하는 기능   
+    // - 연산을 DB쪽에 하도록 넘기고 싶은 경우
+    // - EF Core 쿼리가 사람이 직접 작성하는 SQL 쿼리보단 효율이 떨어지기 때문에
+    // -> SQL 쿼리를 직접만들고 함수를 만들어서 호출하게 만들 수 있다.
+
+    // 1) Configuration
+    // - static 함수를 만들고 EF Core에 등록하는 과정
+    // 2) Database Setup ( .ExecuteSqlRaw(함수이름) )
+    // 3) 사용
+
+    /*
+      
+        Annotation (데이터 주석 방식으로 DB함수로 만들어줌)
+        static 함수 선언
+        [DbFunction()]
+        public static double? GetAverageReviewScore(int ItemID)
+        {
+            throw new NotImplementedException("사용 금지!"); // c# 에서 호출하면 예외 발생 시키도록
+        }
+
+        함수 DB에 등록시키기
+        string Command =
+        함수를 생성한다 GetAverageReviewScore sql로 내용을 채워준후
+        .ExecuteSqlRaw 함수로 등록한다.
+        @" CREATE FUNCTION GetAverageReviewScore (@itemId INT) RETURNS FLOAT
+           AS
+           BEGIN
+           DECLARE @Result AS FLOAT
+
+           SELECT @Result = AVG(CAST([Score] AS FLOAT))
+           FROM ItemReview AS r
+           WHERE @itemId = r.ItemId
+
+           RETURN @result
+           END";
+
+           DB.Database.ExecuteSqlRaw(Command);
+        
+        사용
+        foreach(double? Average in DB._Items.Select(i => Program.GetAverageReviewScore(i.ItemId))) // 이런식으로 사용
+        만약 Program.GetAverageReviewScore를 직접 호출하면 위에서 설정한 throw로 인해 예외를 던진다.
+    */
+    public class ItemReview
+    {
+        public int ItemReviewId { get; set; }
+        public int Score { get; set; }
+    }
+    #endregion
+
     // DB 관계 모델링할때
     // 1  : 1
     // 1  : 다
@@ -245,7 +296,7 @@ namespace MMO_EFCore
             get { return _JsonData; }
             //set { _JsonData = value; } 
             //만약 특정 상황이 생겨서 해당 변수에 대해 set이 없을 경우 
-            //EF Core의 규칙에 의해서 set이 없을 경우 DB에 저장이 되지 않는 문제가 생긴다.
+            //EF Core의 규칙에 의해서 set이 없을 경우에는 DB에 저장이 되지 않는 문제가 생긴다.
         }
 
         // Owend Type - .OwnsOne() 연습
@@ -261,6 +312,7 @@ namespace MMO_EFCore
         //Builder.Entity<Item>() // ItemEntity에서
         //    .Property(i => i.JsonData) //JsonData라고 하는 변수에
         //    .HasField("_JsonData"); //_JsonData를 연동시켜줘 라고 하는 방식
+
         public void SetOption(ItemOption Option)
         {
             _JsonData = JsonConvert.SerializeObject(Option);
@@ -289,6 +341,9 @@ namespace MMO_EFCore
 
         public int? CreatorId { get; set; }
         public Player Creator { get; set; }
+
+        // UDF Test
+        public  ICollection<ItemReview> Reviews { get; set; }
     }
 
     public class EventItem : Item

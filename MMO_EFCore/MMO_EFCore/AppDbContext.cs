@@ -71,7 +71,9 @@ namespace MMO_EFCore
                 .HasName("Index_Person_Name") //인덱스 이름 정하기
                 .IsUnique(); //이름이 겹치면 안되므로 Unique로 설정
                              //Builder.Entity<Player>().Property(p => p.Name).IsRequired(); // Name을 Not Null로 설정 isRequired(false) null로 설정
+            #endregion
 
+            #region 외부키 지정하기
             //Builder.Entity<Player>()
             //    .HasMany(p => p.CreatedItems)
             //    .WithOne(i => i.Creator)
@@ -109,6 +111,10 @@ namespace MMO_EFCore
             // 위에서 구성한 Relationship를 토대로 Items테이블에 집어 넣는다.
             Builder.Entity<Item>().ToTable("Items"); // Item을 Items 테이블에
             Builder.Entity<ItemDetail>().ToTable("Items"); // ItemDetail을 Items 테이블에
+
+            // UDF Test
+            // GetAverageReviewScore를 DB Function으로 만들어줌
+            Builder.HasDbFunction(() => Program.GetAverageReviewScore(0));
         }
     }
 }
