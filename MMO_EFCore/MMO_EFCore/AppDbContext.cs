@@ -120,12 +120,12 @@ namespace MMO_EFCore
 
             #region Defalut Value
             // Default Value Test
-            Builder.Entity<Item>()
-                .Property("CreateData")
-                .HasDefaultValue(new DateTime(2021, 1, 1));
+            //Builder.Entity<Item>()
+            //    .Property("CreateDate")
+            //    .HasDefaultValue(new DateTime(2021, 1, 1));
 
             Builder.Entity<Item>()
-                .Property("CreateData")
+                .Property("CreateDate")
                 .HasDefaultValueSql("GETDATE()");
 
             Builder.Entity<Player>()

@@ -287,7 +287,7 @@ namespace MMO_EFCore
     // 3) SQL Fragment ( 새로운 값이 추가되는 시점에 DB쪽에서 실행 )
     // - .HasDefaultValueSql
     // Builder.Entity<Item>()
-    //        .Property("CreateData")
+    //        .Property("CreateDate")
     //        .HasDefaultValueSql("GETDATE()"); -- 이처럼 Sql 명령어 조각을 넣어주는 방식
     // 단 이렇게 설정하면 외부에서 해당 변수를 수정 할 수 없게 private으로 막아줘야 의미가 있다고 할 수 있다.
     // 4) Value Generator (EF Core에서 실행된다)
@@ -305,6 +305,51 @@ namespace MMO_EFCore
             return name;
         }
     }
+
+    #endregion
+
+    #region Migration
+    // DB 버전관리에 대한 내용
+    // 기준 값을 정해야 한다.
+    // DB 테이블에 있는 값들을 원본으로 할 것인지,
+    // 실질적으로 코드로 구성하고 있는 데이터인 public class AppDbContext를 원본으로 할 것인지
+    // 거의 닭이 먼저냐 알이 먼저냐
+
+    // 1) Code - First
+    // - AppDBContext가 원본이며, AppDBConect안에 있는 Entity Class를 설계한 데이터들이 원본 설계이며
+    // - 만약 틀어짐이 발생했다면, DB가 잘못된 것으로 여기는 방법
+    // - 지금까지 우리가 사용하던 방식 ( Entity Class / DbContext가 기준 )
+    // - 항상 최신 상태로 DB를 업데이트 하고 싶다는 말이 아님
+
+    // --- Migration Step ---
+    // A) Migration 만들고 -> Add-Migration [Migration 이름] ( 패키지 관리자 콘솔에 입력해야 함 )
+    // B) Migration을 적용한다.
+
+    // Add-Migration [Name]
+    // (1) DbContext를 찾아서 분석해서 DB를 모델링한다. (최신)
+    // (2) ~ModelSnapshot.cs을 이용해서 가장 마지막 Migration 상태의 DB 모델링 (가장 마지막 상태)
+    // (3) 1 과 2를 비교해서 결과를 도출 ( 최신과 가장 마지막 상태로 저장되어 있던 Migration을 비교 ) 맨 처음에는 1번 파일 없음
+    //   - a) ModelSnapShot -> 최신 DB 모델링
+    //   - b) Migrate.Designer.cs와 Migrate.cs -> Migration 관련된 세부 정보
+    //      Migrate.cs 에 Up 함수와 Down 함수가 있는데 
+    //      Up은 이전 상태에서 해당 Migration으로 오려면 해야하는 작업을 서술
+    //      Down은 Migration 상태에서 이전 상태로 가려면 해야하는 작업을 서술
+    // 즉, A(현재) B(과거) Up = B(과거) -> A(현재) Down = A(현재) -> B(과거)
+    // Up 과 Down에 내용을 추가 할 수 있음
+    
+    // Migration 적용
+    //  (1) SQL change script - Script-Migration [From] [To] [Options]  From, To 에는 Migration 이름 넣으면 됨
+    //                          From 하고 To 비워져 있으면 최초에서 최후 버전으로 인식해서 적용시켜준다. 
+    //      이 방법을 권장 쿼리문을 DB에 넘겨주면 되니까 EF와는 독립적으로 사용하기도 좋고 
+    //  (2) Database.Migrate 호출 -- 잘 사용 안함
+    //  (3) Command Line 방식 - Update-Database [Options]
+    //     - 아무런 옵션 없이 Update-Database 입력하면 데이터베이스의 상태를 최신 상태로 업데이트 해준다.
+    //     - 특정 마이그레이션으로 이동 : Update-Database 마이그레이션이름 이렇게 입력하면 해당 마이그레이션 상태로 돌려준다.
+    //     - 마지막 Migration 삭제 (Remove-Migration)
+
+    // 2) Database - First
+
+    // 3) SQL - First
 
     #endregion
 
