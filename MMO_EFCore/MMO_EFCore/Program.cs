@@ -20,7 +20,7 @@ namespace MMO_EFCore
             Console.WriteLine("명령어 입력 : ");
             Console.WriteLine("[0] Force Reset");
             Console.WriteLine("[1] Show Item");
-            Console.WriteLine("[2] CalcAverage");
+            Console.WriteLine("[2] TestUpdateAttack");
 
             while (true)
             {
@@ -38,7 +38,7 @@ namespace MMO_EFCore
                         //DBCommands.UpdateByReload();
                         break;
                     case "2":
-                        DBCommands.CalcAverage();
+                        //DBCommands.CalcAverage();
                         //DBCommands.UpdateByFull();
                         //DBCommands.EagarLoading();
                         //DBCommands.UpdateDate();

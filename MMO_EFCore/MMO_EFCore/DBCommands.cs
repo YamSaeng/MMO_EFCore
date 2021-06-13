@@ -75,7 +75,7 @@ namespace MMO_EFCore
         // 2) 데이터를 연결한다.
         public static void CreateTestData(AppDbContext DB)
         {
-            Player SungWon = new Player() {};
+            Player SungWon = new Player() { Name = "SungWon" };
             Player WonJi = new Player() { Name = "WonJi" };
             Player YamSaeng = new Player() { Name = "YamSaeng" };
 
@@ -92,19 +92,19 @@ namespace MMO_EFCore
                 new Item()
                 {
                     TemplateId = 101,
-                    Owner = SungWon
+                    Owner = WonJi
                 },
-                new EventItem()
-                {
-                    TemplateId = 102,
-                    Owner = WonJi,
-                    DestroyDate = DateTime.Now
-                },
-                new Item()
-                {
-                    TemplateId = 103,
-                    Owner = YamSaeng
-                }
+                //new EventItem()
+                //{
+                //    TemplateId = 102,
+                //    Owner = SungWon,
+                //    DestroyDate = DateTime.Now
+                //},
+                //new Item()
+                //{
+                //    TemplateId = 103,
+                //    Owner = YamSaeng
+                //}
             };
 
             // Test Shadow Property Value Write
@@ -144,7 +144,7 @@ namespace MMO_EFCore
                 new ItemReview() {Score = 1},
                 new ItemReview() {Score = 0},
             };
-
+            
             DB._Items.AddRange(Items);
             DB._Guilds.Add(Guild);
 
@@ -152,10 +152,50 @@ namespace MMO_EFCore
             // 플레이어는 Item에 간접적(외부키)로 선언되어 있지만 EF가 알아서 DB에 넣어주는 작업을 해준다.
             Console.WriteLine(DB.Entry(SungWon).State);
 
+            // Add
+            Console.WriteLine("1번)" + DB.Entry(WonJi).State);
+
             DB.SaveChanges(); //DB에 저장한다.            
+
+            // Add Test
+            {
+                Item item = new Item()
+                {
+                    TemplateId = 500,
+                    Owner = WonJi
+                };
+                DB._Items.Add(item);
+                //위와 같을때 WonJi의 상태를 확인하면 다음과 같다.
+                //아이템을 추가하면 아이템의 Owner로 설정되어 있는 Wonji(Player)도 영향이 가는데
+                //만약 Wonji(Player)가 NonTracking 상태이면 Added상태로 끝나겟지만
+                //현재 Wonji(Player)는 위에서 SaveChanges로 DB에 저장을 해둔 상태이므로 EF로부터 Tracking당하고 있는 상태라고 할 수 있다.
+                //또한 Item에 FK가 있기때문에 1 : 1 관계인 Item과 Player관계에 있어서 Player에는 FK를 설정할 필요가 없으므로
+                //최종적으로 지금 WonJi(Player)의 상태는 Added가 아닌 Unchanged로 설정된다.
+                //단, Player에서 FK를 설정하게 했다면 WonJi(Player)의 상태는 Modified로 설정되어 있게 된다.
+                Console.WriteLine("2번)" + DB.Entry(WonJi).State); // Unchanged
+            }
+
+            // Delte Test
+            {
+                Player player = DB._Players.First();
+
+                // 아직 DB는 아래에서 새로 생성해서 넣어준 길드의 존재를 모른다. ( DB 키 없음 )
+                player.Guild = new Guild() { GuildName = "곧삭제될길드" };
+                // 위에서 아이템이 이미 DB에 들어간 상태 ( DB 키 있음 )
+                player.OwnedItem = Items[0];
+
+                DB._Players.Remove(player);
+
+                //Player를 직접적으로 삭제하니까 player의 상태는 Delted
+                Console.WriteLine("3번)" + DB.Entry(player).State); // Deleted
+                Console.WriteLine("4번)" + DB.Entry(player.Guild).State); // Added
+                Console.WriteLine("5번)" + DB.Entry(player.OwnedItem).State); // Deleted
+            }
 
             // 3) SungWon Unchanged 상태 ( DB에도 반영 완료 되서 평온한 상태 )
             Console.WriteLine(DB.Entry(SungWon).State);
+
+            DB.SaveChanges(); //DB에 저장한다.
         }
 
         #region Update
@@ -622,6 +662,49 @@ namespace MMO_EFCore
                         Console.WriteLine($"Average : {Average.Value}");
                     }
                 }
+            }
+        }
+
+        public static void TestUpdateAttack()
+        {
+            using (AppDbContext DB = new AppDbContext())
+            {
+                // Update Test
+                {
+                    //Disconnected 상태 : Update 3단계가 연속적으로 일어나지 않고, 끊겨서 나중에 업데이트 되는 경우 ( 이럴 경우 통으로 업데이트 해줘야함 )
+                    Player p = new Player();
+                    p.PlayerId = 2;
+                    p.Name = "Mommy";
+                    //DB에서는 아래에서 새로 만들어준 길드의 존재를 모르므로 해당 길드는 DB키가 없다.
+                    p.Guild = new Guild() { GuildName = "SinSae" };
+
+                    Console.WriteLine("6번)" + DB.Entry(p.Guild).State); // 반영하기 전이고 DB와 아무런 관련이 없어서 Detached 상태
+                    DB._Players.Update(p);
+                    Console.WriteLine("7번)" + DB.Entry(p.Guild).State); // DB 반영으로 인해 추적당하고 잇어서 Relationship이므로 Added 상태로 바뀜
+                }
+
+                // Attach Test
+                {
+                    Player p = new Player();
+                    p.PlayerId = 3;
+                    p.Name = "Daddy-_+";
+
+                    p.Guild = new Guild() { GuildName = "Attach Guild" };
+                    Console.WriteLine("8번)" + DB.Entry(p.Guild).State); // 반영하기 전이고 DB와 아무런 관련이 없어서 Detached 상태
+                    DB._Players.Attach(p);
+                    // 3 번째 플레이어의 이름은 바뀌지 않는다.
+                    // 단순히 p플레이어를 Tracked Entity로 바꾸는 것이기 때문
+                    // 반면에 Attack한 후에 이름을 수정한 후 SaveChanges를 하면 해당 정보는 Tracked Entity로 바뀌엇고
+                    // 이름을 바꾸는 작업을 한 후 SaveChanges를 호출했기 때문에 이름이 바뀐다.
+                    Console.WriteLine("9번)" + DB.Entry(p.Guild).State); // DB 반영으로 인해 추적당하고 잇어서 Relationship이므로 Added 상태로 바뀜
+                }
+                
+                // 위와 아래에서 2 3 번을 대상으로 플레이어를 업데이트 해줫는데, 아이템은 연동시켜 주지 않았기 때문에
+                // 기존에 2 3 을 Owner로 가지고 있던 아이템들의 Owner가 날라가게 된다.
+                // 이때 Item이 가지고 있던 외부키인 OwnerID는 Nullable이 설정되어 있지 않기 때문에 에러가 생긴다.
+                // 따라서 OwnerId를 Nullable로 만들어두거나 아니라면 우선 주석처리
+
+                DB.SaveChanges();
             }
         }
         ////특정 플레이어가 소지한 아이템들의 CreateDate를 수정

@@ -336,7 +336,7 @@ namespace MMO_EFCore
     //      Down은 Migration 상태에서 이전 상태로 가려면 해야하는 작업을 서술
     // 즉, A(현재) B(과거) Up = B(과거) -> A(현재) Down = A(현재) -> B(과거)
     // Up 과 Down에 내용을 추가 할 수 있음
-    
+
     // Migration 적용
     //  (1) SQL change script - Script-Migration [From] [To] [Options]  From, To 에는 Migration 이름 넣으면 됨
     //                          From 하고 To 비워져 있으면 최초에서 최후 버전으로 인식해서 적용시켜준다. 
@@ -358,6 +358,68 @@ namespace MMO_EFCore
 
     #endregion
 
+    #region DB Context 심화 과정 (최적화 등 때문)
+    // DB Context의 핵심 기능 3가지
+    // 1) ChangeTracker 
+    // - Tracking State 관리하는 객체
+    // 2) Database
+    // - Transaction
+    // - DB Creation / Migration
+    // - Raw SQL ( SQL 실행 )
+    // 3) Model
+    // - DB 모델링 관련
+
+    // State (상태)
+    // 1) Detached (No Tracking | 추적되지 않는 상태, SaveChanges를 해도 추적하지 않고 있어서 DB에 반영이 안되어 있음) 
+    // 2) Unchanged (DB에 있고, 메모리에 들고 있는 해당 변수가 변동사항이 없어서 수정할 필요가 없는 상태, SaveChanges를 해도 값이 그대로니까 아무것도 하지 않음)
+    // 3) Deleted (DB에는 아직 있지만, 삭제되어야하는 상태, SaveChanges로 DB에 적용)
+    // 4) Modified (DB에 있고, 클라에서 수정(메모리상에서)된 상태, SaveChanges로 DB에 적용)
+    // 5) Added (DB에는 아직 없고, 클라에서 생성(메모리상), SaveChanges로 DB에 적용)
+
+    // State 체크 방법
+    // Entry().State
+    // Entry().Property().IsModified  - 변화가 있어서 적용을 해야하는지의 여부
+    // Entry().Navigation().IsModified - 위와 마찬가지  
+
+    // State가 대부분 '직관적'이지만 Relationship이 개입하면 좀 복잡해진다.
+    // State에 대해 좀 더 자세히 알아보는 이유는 우리가 sql문을 작성해서 쿼리를 날려 수정하는 방법을 사용하지 않고
+    // 상태 변화를 감지하여 SaveChange하고 DB에 저장하는 방식을 사용하고 있기 때문이다
+
+    // 1) Add / AddRange 사용할 때의 상태 변화
+    // Add를 적용하고 나서 FK로 참조하고 있는 Navigational Property의 상태도 Added로 변한다.  
+    // - NotTracking 상태라면 Added
+    // - Tracking 상태라면, FK 설정이 필요한지에 따라 Modified / 기존 상태 유지 ( = Unchanged )
+
+    // 2) Remove / RemoveRange 사용할 때의 상태 변화
+    // - ( DB에 의해 생성된 Key가 있는지 없는지 ) && ( C# 기본값이 인지 아닌지 ) -> 필요에 따라 Unchanged / Modified / Deleted
+    // - ( DB에 의해 생성된 Key가 없고 ) || ( C# 기본값 이라면 ) -> Added
+    // - 삭제하는데 왜 굳이 Added인것인지 동작의 일관성 때문
+    // - DB에서도 일단 존재는 알고 있어야 하기에 특히나 Cascade Delete 처리할때 등
+
+    // 3) Update / UpdateRange
+    // - EF에서 Entity를 Update하는 기본적인 방법은 Update가 아님
+    // - Tracked Entity를 얻어와서 Property를 수정하고 최종적으로 SaveChange
+    // - Update는 UnTracked Entity를 통으로 업데이트 할 때 사용한다
+
+    // EF Core에서 Update하면 일어나는 과정
+    // 1) Update 호출
+    // 2) Entity State = Modified 로 변경
+    // 3) 해당 객체의 모든 Non - Relational Property의 IsModified = true로 변경 -> 이로써 객체가 통으로 DB에 갱신이 됨
+    // - 만약 Relationship이 있는 경우 
+    // - ( DB에 의해 생성된 Key가 있는지 없는지 ) && ( C# 기본값이 인지 아닌지(!=0) ) -> 필요에 따라 Unchanged / Modified / Deleted
+    // - ( DB에 의해 생성된 Key가 없고 ) || ( C# 기본값 이라면 (==0) ) -> Added
+
+    // 4) Attach
+    // - Untracked Entity를 Tracked Entity로 변경해주는 기능
+    // - ( DB에 의해 생성된 Key가 있는지 없는지 ) && ( C# 기본값이 인지 아닌지(!=0) ) -> Unchanged
+    // - ( DB에 의해 생성된 Key가 없고 ) || ( C# 기본값 이라면 (==0) ) -> Added
+    // - Attach는 주로 DB에 있는 내용을 확인할때 사용하는데, 다음과 같은 예를 들 수 있다.
+    // 특정 Entity의 정보를 모두 알고 잇을 경우 해당 정보를 DB로 부터 긁어온다고 했을때의 과정을 살펴보면
+    // 우선 해당 정보를 새로 선언하고 똑같이 설정한 후 Load를 통하여 가져오는것 보다
+    // Attach를 이용해서 새로 선언한 정보를 Tracked Entity로 바꿔서 해당 정보를 가져오는 방법으로 사용 할 수 있다.
+    
+    #endregion
+           
     // DB 관계 모델링할때
     // 1  : 1
     // 1  : 다
