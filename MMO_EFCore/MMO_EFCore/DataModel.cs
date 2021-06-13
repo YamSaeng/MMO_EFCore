@@ -461,6 +461,25 @@ namespace MMO_EFCore
         void SetCreateTime();
     }
     #endregion
+
+    #region SQL 직접 호출
+    // 경우에 따라 직접 만든 SQL을 호출할 수 있다.
+    // ex) LINQ로 처리할 수 없는 것 -> Stored Procedure 호출 등
+    // ex) 성능 최적화 등
+
+    // 1) FromSql -> FromSqlRaw / FromSqlInterpolated 로 쪼개짐
+    // - SELECT 구문한 질의
+    
+    // 2) ExecuteSqlCommand -> ExecuteSqlRaw / ExecuteSqlInterpolated 로 쪼개짐
+    // - SELECT를 제외한 쿼리
+
+    // 3) Reload    
+    // - Trackect Entity를 다루고 있을 때 2)번에 의해 DB 정보가 변경 될 경우의 상황
+    // 이럴 경우 당연히 다루고 있는 Entity의 정보는 갱신되지 않는다.
+    // 이럴 때 사용하는 것이 Reload 이다. ( Entity와 DB를 맞춰 주는 것 )
+    // DB.Entry(맞춰줄 대상).Reload();
+
+    #endregion
     // DB 관계 모델링할때
     // 1  : 1
     // 1  : 다

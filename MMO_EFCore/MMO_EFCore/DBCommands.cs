@@ -745,6 +745,54 @@ namespace MMO_EFCore
                 }                             
             }
         }
+
+        public static void Test()
+        {
+            using (AppDbContext DB = new AppDbContext())
+            {
+                //FromSql 
+                {
+                    string Name = "SungWon";
+
+                    // 두가지 방법
+                    // 두가지 방법 모두 sql Injection 을 막아준다
+                    // (1)
+                    var list = DB._Players
+                        .FromSqlRaw("SELECT * FROM dbo.Player WHERE Name = {0}", Name)
+                        // Player가 가지고 있는 외부키에 대해서는 알려주지 않기 때문에
+                        // 알기위에서는 기존과 마찬가지로 .Include를 사용한다.
+                        .Include(p => p.OwnedItem)
+                        .ToList();
+
+                    foreach(var p in list)
+                    {
+                        Console.WriteLine($"{p.Name} {p.PlayerId}");
+                    }
+
+                    // string Interpolation c# 6.0
+                    // (2)
+                    var list2 = DB._Players
+                        .FromSqlInterpolated($"SELECT * FROM dbo.Player WHERE Name = {Name}")
+                        .ToList();
+                        
+                    foreach(var p in list2)
+                    {
+                        Console.WriteLine($"{p.Name} {p.PlayerId}");
+                    }
+                }
+
+                // ExecuteSqlCommand + Reload
+                {
+                    Player player = DB._Players.Single(p => p.Name == "SungWon");
+
+                    string PrevName = "SungWon";
+                    string AfterName = "SungWon_Jung";
+                    DB.Database.ExecuteSqlInterpolated($"UPDATE dbo.Player SET Name = {AfterName} WHERE NAme = {PrevName}");
+
+                    DB.Entry(player).Reload();
+                }
+            }
+        }
         ////특정 플레이어가 소지한 아이템들의 CreateDate를 수정
         //public static void UpdateDate()
         //{
