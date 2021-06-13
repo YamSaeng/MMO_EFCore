@@ -38,6 +38,7 @@ namespace MMO_EFCore
                         //DBCommands.UpdateByReload();
                         break;
                     case "2":
+                        DBCommands.TestUpdateAttack();
                         //DBCommands.CalcAverage();
                         //DBCommands.UpdateByFull();
                         //DBCommands.EagarLoading();

@@ -82,29 +82,24 @@ namespace MMO_EFCore
             // 1) SungWon Detached 상태 ( 메모리 상에는 있지만 아직 아무런 연동 작업도 하지 않았기 때문에 Detached 상태 )
             Console.WriteLine(DB.Entry(SungWon).State);
 
-            Player Player = new Player()
-            {
-                Name = "SungWon"
-            };
-
             List<Item> Items = new List<Item>()
             {
                 new Item()
                 {
                     TemplateId = 101,
-                    Owner = WonJi
+                    Owner = SungWon
                 },
-                //new EventItem()
-                //{
-                //    TemplateId = 102,
-                //    Owner = SungWon,
-                //    DestroyDate = DateTime.Now
-                //},
-                //new Item()
-                //{
-                //    TemplateId = 103,
-                //    Owner = YamSaeng
-                //}
+                new EventItem()
+                {
+                    TemplateId = 102,
+                    Owner = WonJi,
+                    DestroyDate = DateTime.Now
+                },
+                new Item()
+                {
+                    TemplateId = 103,
+                    Owner = YamSaeng
+                }
             };
 
             // Test Shadow Property Value Write
@@ -183,7 +178,7 @@ namespace MMO_EFCore
                 player.Guild = new Guild() { GuildName = "곧삭제될길드" };
                 // 위에서 아이템이 이미 DB에 들어간 상태 ( DB 키 있음 )
                 player.OwnedItem = Items[0];
-
+                
                 DB._Players.Remove(player);
 
                 //Player를 직접적으로 삭제하니까 player의 상태는 Delted
@@ -698,13 +693,56 @@ namespace MMO_EFCore
                     // 이름을 바꾸는 작업을 한 후 SaveChanges를 호출했기 때문에 이름이 바뀐다.
                     Console.WriteLine("9번)" + DB.Entry(p.Guild).State); // DB 반영으로 인해 추적당하고 잇어서 Relationship이므로 Added 상태로 바뀜
                 }
-                
+
                 // 위와 아래에서 2 3 번을 대상으로 플레이어를 업데이트 해줫는데, 아이템은 연동시켜 주지 않았기 때문에
                 // 기존에 2 3 을 Owner로 가지고 있던 아이템들의 Owner가 날라가게 된다.
                 // 이때 Item이 가지고 있던 외부키인 OwnerID는 Nullable이 설정되어 있지 않기 때문에 에러가 생긴다.
                 // 따라서 OwnerId를 Nullable로 만들어두거나 아니라면 우선 주석처리
 
-                DB.SaveChanges();
+                //State 조작
+                {
+                    Player p = new Player() { Name = "StateTest" };
+                    p.Guild = new Guild() { GuildName = "StateGuild" };
+                    DB.Entry(p).State = EntityState.Added;
+                    // 원래는 Detached 상태이지만 이처럼 상태를 Added 상태로 바꿔서
+                    // 마치 DB._Players.Add(p)를 호출한 상태처럼 변경 할 수 있는것
+                    // 이처럼 상태를 바꿀 수 있는데 말이 안되는 상태로 바꾸는 것은 안된다.
+                    DB.SaveChanges();
+                }
+
+                // TrackGraph
+                {
+                    // Disconnected 상태에서,
+                    // 모두 갱신하는것이 아니라 플레이어 이름'만' 갱신하고 싶을 경우
+                    Player p = new Player()
+                    {
+                        PlayerId = 2, Name = "WonJi_New"
+                    };
+
+                    // 아래 조건으로 인해 해당값으로 변경되지 않음
+                    p.OwnedItem = new Item() { TemplateId = 777 };
+                    p.Guild = new Guild() { GuildId = 2, GuildName = "TrackGraphGuild"};
+
+                    DB.ChangeTracker.TrackGraph(p, e =>
+                    {
+                        if(e.Entry.Entity is Player)
+                        {
+                            // 기본적으로 상태값을 Unchagned로 둬서 변경값이 없다고 알려주는대신
+                            e.Entry.State = EntityState.Unchanged;
+                            e.Entry.Property("Name").IsModified = true; // 이름 값은 변경된다고 알려줘서 갱신해준다.
+                        }
+                        else if(e.Entry.Entity is Guild)
+                        {
+                            e.Entry.State = EntityState.Unchanged;
+                        }
+                        else if(e.Entry.Entity is Item)
+                        {
+                            e.Entry.State = EntityState.Unchanged;
+                        }
+                    });
+
+                    DB.SaveChanges();
+                }                             
             }
         }
         ////특정 플레이어가 소지한 아이템들의 CreateDate를 수정

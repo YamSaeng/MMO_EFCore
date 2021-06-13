@@ -417,9 +417,50 @@ namespace MMO_EFCore
     // 특정 Entity의 정보를 모두 알고 잇을 경우 해당 정보를 DB로 부터 긁어온다고 했을때의 과정을 살펴보면
     // 우선 해당 정보를 새로 선언하고 똑같이 설정한 후 Load를 통하여 가져오는것 보다
     // Attach를 이용해서 새로 선언한 정보를 Tracked Entity로 바꿔서 해당 정보를 가져오는 방법으로 사용 할 수 있다.
-    
+
     #endregion
-           
+
+    #region State 조작
+    // 직접 State를 조작할 수 있다. 주로 최적화 이유 때문
+    // Entry().State = EntityState.원하는상태
+    // Entry().Property("프로퍼티이름").IsModified = true
+
+    // 상태조작할때 참조하는 값(= 네비게이셔널 프로퍼티)을 가지고 있으면 복잡해질 경우가 생길 수 있는데 다음과 같다
+    // 릴레이션 쉽이 있는 트래킹 되지 않는 상태에서 조작을 할 경우에 데이터를 통으로 받아서 
+    // Update를 호출 할 경우 네비게이셔널 프로퍼티도 같이 수정되는 경우가 생길 경우
+    // 만약 특정 프로퍼티만 수정을 하고 싶을 때 해당 프로퍼티의 상태 값을 바꿔주는 것을 사용하면 굉장히 유용하게 사용할 수 있다.
+    // 특정 프로퍼티의 상태는 Unchanged상태로 둬서 변화를 주게 하지 않는다는 등
+    // 이때 등장하는 것이 TrackGraph
+
+    // - TrackGraph
+    // Relationship이 있는 Untracked Entity의 State 조작을 보다 쉽게 할 수 잇다.
+    // ex) 전체 데이터 중에서 일부만 갱신하고 싶을 경우
+
+    // - ChangeTracker
+    // 상태 정보의 변화를 감지하고 싶을 때 사용
+    // ex) 특정 플레이어의 프로퍼티 값이 바뀔 경우 로그를 남기고 싶을 때
+    // ex) Validation 코드를 넣고 싶을 경우
+    // ex) 플레이어가 생성된 시점을 CreateTime으로 정보를 추가하고 싶을 경우
+    // 과정
+    // 1) SaveChanges를 override
+    // 2) ChangeTracker Enrites를 이용해서 바뀔 정보를 추출 / 사용 ( 로그 등 )
+    
+    // DB.SaveChanges의 위치에 따른 해석                
+    // 1) 모든 구문이 끝나고 나서 SaveChange 호출
+    // 2) 각 구문이 끝날 때 SaveChange 호출
+    // 우선 SaveChange를 호출하는 것은 Transaction을 하는것과 동일하다고 생각 할 수 있다.
+    // 일련의 과정을 최종적으로 DB에 적용하라는것이라는 것인데, 모든 구문이 끝나고 나서 SaveChange를 할경우
+    // 각 구문에서 하나라도 에러가 난다면 DB에 반영이 되지 않는 것을 의미한다.
+    // 반면 각 구문이 끝나고 나서 SaveChange를 호출할때는 서로 연관되지 않고 Transaction을 하는 것과 같다.
+
+    // 만들어진 시간 추적하기 위한 인터페이스
+    // 상속받는 대상이 SetCrateTime을 구현하고 SaveChange할때 해당 시점에서의 시간을 저장한다.
+    public interface ILogentity
+    {
+        DateTime CreateTime { get; }
+        void SetCreateTime();
+    }
+    #endregion
     // DB 관계 모델링할때
     // 1  : 1
     // 1  : 다
@@ -531,7 +572,7 @@ namespace MMO_EFCore
     //[ForeignKey("외부키 구분자 이름")]를 이용해 선언해준다.
     //또한 1 : 1 구조에서 똑같은 외부키 값을 넣게 되면 전에 입력한 외부키 값이 null로 밀려 있게된다.
     [Table("Player")]
-    public class Player
+    public class Player : ILogentity
     {
         //클래스이름에 Id를 붙이면 해당 변수가 PrimaryKey로 설정된다.
         public int PlayerId { get; set; }
@@ -546,6 +587,14 @@ namespace MMO_EFCore
         public ICollection<Item> CreatedItems { get; set; }
 
         public Guild Guild { get; set; }
+
+        //Change Track Test
+        public DateTime CreateTime { get; private set; }
+
+        public void SetCreateTime()
+        {
+            CreateTime = DateTime.Now;
+        }
     }
 
     //플레이어와 1 : 다 구조

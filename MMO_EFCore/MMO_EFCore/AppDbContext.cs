@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace MMO_EFCore
@@ -128,10 +129,31 @@ namespace MMO_EFCore
                 .Property("CreateDate")
                 .HasDefaultValueSql("GETDATE()");
 
-            Builder.Entity<Player>()
+           Builder.Entity<Player>()
                 .Property(p => p.Name)
                 .HasValueGenerator((p, e) => new PlayerNameGenerator());
             #endregion
+        }
+
+        // Change Track Test
+        public override int SaveChanges()
+        {
+            // ChangeTracker를 이용해 Entri를 추적하는데 조건은 상태가 Added인 Entity를 가져온다.
+            var Entities = ChangeTracker.Entries()
+                .Where(e => e.State == EntityState.Added);
+
+            //가져온 Entity 중에서 ILogentity로 형변환이 된다면 즉, ILogentity를 상속받은 애들
+            foreach(var entity in  Entities)
+            {
+                ILogentity Tracked = entity.Entity as ILogentity;
+                if(Tracked != null)
+                {
+                    //SetCreateTime 함수를 호출해준다.
+                    Tracked.SetCreateTime();
+                }
+            }
+
+            return base.SaveChanges();
         }
     }
 }
