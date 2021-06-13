@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,9 +33,13 @@ namespace MMO_EFCore
         // DB를 연결할때 필요하면 문자열로 각종 설정을 붙인다.
         public const string ConnectionString = @"Data Source=(localdb)\ProjectsV13;Initial Catalog=EFCoreDb;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False";
 
+        public static readonly ILoggerFactory MyLoggerFactor = LoggerFactory.Create(Builder => { Builder.AddConsole(); });
+
         protected override void OnConfiguring(DbContextOptionsBuilder Options)
         {
-            Options.UseSqlServer(ConnectionString);
+            Options
+                .UseLoggerFactory(MyLoggerFactor)
+                .UseSqlServer(ConnectionString);
         }
 
         protected override void OnModelCreating(ModelBuilder Builder)
